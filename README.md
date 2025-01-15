@@ -8,4 +8,4 @@
 * Nicholas Lee, n65lee@uwaterloo.ca
 * Omar Elserwi, oelserwi@uwaterloo.ca
 * Ryan Kahkeshan, rkahkesh@uwaterloo.ca
-* [Team Contract wiki page](/Team-Contract.md)
+* [Team Contract wiki page](https://git.uwaterloo.ca/oelserwi/cs346-lab101-4/-/wikis/Team-Contract)
