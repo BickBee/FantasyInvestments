@@ -12,3 +12,4 @@
 
 ### [Team Contract](https://git.uwaterloo.ca/oelserwi/cs346-lab101-4/-/wikis/Team-Contract)
 ### [Project Proposal](https://git.uwaterloo.ca/oelserwi/cs346-lab101-4/-/wikis/Project-Proposal)
+### [Design Proposal](https://git.uwaterloo.ca/oelserwi/cs346-lab101-4/-/wikis/Design-Proposal)
