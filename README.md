@@ -10,6 +10,9 @@
 * Ryan Kahkeshan, rkahkesh@uwaterloo.ca
 
 
+### Running
+This app is optimized for the Pixel 9 Pro (API 35, VanillaIceCream OS). Performance on other devices may vary.
+
 ### [Meeting Minutes](https://git.uwaterloo.ca/oelserwi/cs346-lab101-4/-/wikis/Meeting-Minutes)
 
 ### [Team Contract](https://git.uwaterloo.ca/oelserwi/cs346-lab101-4/-/wikis/Team-Contract)
