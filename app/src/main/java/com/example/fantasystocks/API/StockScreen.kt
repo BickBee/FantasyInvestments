@@ -1,4 +1,4 @@
-package com.example.fantasystocks
+package com.example.fantasystocks.API
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 
 @Composable
-fun StockScreen(modifier: Modifier = Modifier) {
+fun StockScreenAPI(modifier: Modifier = Modifier) {
     var stockInfo by remember { mutableStateOf("Loading...") }
     val client = remember {
         HttpClient {
