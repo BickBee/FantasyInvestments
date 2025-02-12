@@ -1,4 +1,4 @@
-package com.example.fantasystocks
+package com.example.fantasystocks.API
 
 import kotlinx.serialization.Serializable
 
