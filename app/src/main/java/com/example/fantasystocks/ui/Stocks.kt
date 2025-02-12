@@ -1,43 +1,109 @@
 package com.example.fantasystocks.ui
 
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
-import com.example.fantasystocks.API.StockScreenAPI
 import kotlinx.serialization.Serializable
 
 @Serializable
 object Stocks
 
 fun NavGraphBuilder.stocksDestination() {
-    composable<Stocks> {
-        StockScreenAPI()
-        GraphChart(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(250.dp),
-            dataPoints = listOf(
-                1f to 5f,
-                2f to 10f,
-                3f to 15f,
-                4f to 8f,
-                5f to 20f
-            ),
-            lineColor = Color.Green,
-            pointColor = Color.Red,
-            strokeWidth = 4f,
-            pointRadius = 6f
-        )
-    }
+    composable<Stocks> { StocksScreen() }
 }
 
 @Composable
 fun StocksScreen() {
-    Text("Hello from stocks")
+    var selectedTab by remember { mutableStateOf(0) }
+    
+    Column(modifier = Modifier.fillMaxSize()) {
+        TabRow(selectedTabIndex = selectedTab) {
+            Tab(
+                selected = selectedTab == 0,
+                onClick = { selectedTab = 0 },
+                text = { Text("Watchlist") }
+            )
+            Tab(
+                selected = selectedTab == 1,
+                onClick = { selectedTab = 1 },
+                text = { Text("Stocks") }
+            )
+        }
+
+        when (selectedTab) {
+            0 -> WatchlistTab()
+            1 -> StocksTab()
+        }
+    }
+}
+
+@Composable
+private fun WatchlistTab() {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        items(3) { index ->
+            StockItem(
+                when (index) {
+                    0 -> Triple("Microsoft", "MSFT", "$259.99")
+                    1 -> Triple("Amazon", "AMZN", "$3,378.00")
+                    else -> Triple("Tesla", "TSLA", "$678.90")
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun StocksTab() {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        items(10) { index ->
+            if (index < 3) {
+                StockItem(
+                    when (index) {
+                        0 -> Triple("Microsoft", "MSFT", "$259.99")
+                        1 -> Triple("Amazon", "AMZN", "$3,378.00")
+                        else -> Triple("Tesla", "TSLA", "$678.90")
+                    }
+                )
+            } else {
+                StockItem(Triple("Stock name", "<stock ticker>", "$.XX"))
+            }
+        }
+    }
+}
+
+@Composable
+private fun StockItem(stock: Triple<String, String, String>) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(text = stock.first, style = MaterialTheme.typography.titleMedium)
+                Text(text = stock.second, style = MaterialTheme.typography.bodyMedium)
+            }
+            Text(text = stock.third, style = MaterialTheme.typography.titleMedium)
+        }
+    }
 }
