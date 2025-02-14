@@ -14,7 +14,9 @@
 This app is optimized for the Pixel 9 Pro (API 35, VanillaIceCream OS). Performance on other devices may vary.
 
 ### [Meeting Minutes](https://git.uwaterloo.ca/oelserwi/cs346-lab101-4/-/wikis/Meeting-Minutes)
-
 ### [Team Contract](https://git.uwaterloo.ca/oelserwi/cs346-lab101-4/-/wikis/Team-Contract)
 ### [Project Proposal](https://git.uwaterloo.ca/oelserwi/cs346-lab101-4/-/wikis/Project-Proposal)
 ### [Design Proposal](https://git.uwaterloo.ca/oelserwi/cs346-lab101-4/-/wikis/Design-Proposal)
+### [Releases](https://git.uwaterloo.ca/oelserwi/cs346-lab101-4/-/wikis/Releases?redirected_from=home)
+- [Version 0.1.0](https://git.uwaterloo.ca/oelserwi/cs346-lab101-4/-/wikis/Releases/%7BVersion-0.1.0%7D) 
+- [Version 0.1.1](https://git.uwaterloo.ca/oelserwi/cs346-lab101-4/-/wikis/Releases/%7BVersion-0.1.1%7D)
