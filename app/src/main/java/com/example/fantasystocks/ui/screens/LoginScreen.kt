@@ -52,9 +52,7 @@ fun LoginScreen(
 
         Button(
             onClick = {
-            // navController.navigate(FriendsList)
-            // authViewModel.signInWithEmail(email, password)
-                onLoginSuccess()
+                authViewModel.signInWithEmail(email, password)
             },
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -65,8 +63,7 @@ fun LoginScreen(
 
         Button(
             onClick = {
-                onLoginSuccess()
-                // authViewModel.signUpWithEmail(email, password)
+                authViewModel.signUpWithEmail(email, password)
             },
             modifier = Modifier.fillMaxWidth()
         ) {

@@ -14,8 +14,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class AuthViewModel : ViewModel() {
+class AuthViewModel() : ViewModel() {
     private val _isAuthenticated = MutableStateFlow<Boolean?>(null)
+    private val supabaseClient = SupabaseClient()
     val isAuthenticated: StateFlow<Boolean?> = _isAuthenticated.asStateFlow()
 
     private val _errorMessage = MutableStateFlow<String?>(null)
@@ -28,7 +29,7 @@ class AuthViewModel : ViewModel() {
     private fun checkAuthState() {
         viewModelScope.launch {
             try {
-                val session = SupabaseClient.supabase.auth.currentSessionOrNull()
+                val session = supabaseClient.supabase.auth.currentSessionOrNull()
                 _isAuthenticated.value = session != null
                 println("Current session: ${session?.user?.email}")
             } catch (e: Exception) {
@@ -43,10 +44,7 @@ class AuthViewModel : ViewModel() {
             try {
                 println("Attempting to sign in with email: $email")
                 try {
-                    SupabaseClient.supabase.auth.signInWith(Email) {
-                        this.email = email
-                        this.password = password
-                    }
+                    supabaseClient.signInExistingUser(email, password)
                     println("Sign in successful")
                     _isAuthenticated.value = true
                     _errorMessage.value = null
@@ -79,10 +77,7 @@ class AuthViewModel : ViewModel() {
                 println("Password length: ${password.length}")
                 
                 try {
-                    SupabaseClient.supabase.auth.signUpWith(Email) {
-                        this.email = email
-                        this.password = password
-                    }
+                    supabaseClient.signUpNewUser(email, password)
                     println("Sign up successful")
                     _isAuthenticated.value = true
                     _errorMessage.value = null

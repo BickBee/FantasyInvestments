@@ -49,7 +49,6 @@ import com.example.fantasystocks.ui.News
 import com.example.fantasystocks.ui.Stocks
 import com.example.fantasystocks.ui.homeDestination
 import com.example.fantasystocks.ui.newsDestination
-import com.example.fantasystocks.ui.screens.HomeScreen
 import com.example.fantasystocks.ui.screens.LoginScreen
 import com.example.fantasystocks.ui.stocksDestination
 import com.example.fantasystocks.ui.theme.FantasyStocksTheme
@@ -71,14 +70,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Handle deep links for auth
-        SupabaseClient.supabase.handleDeeplinks(intent)
-
         enableEdgeToEdge()
         setContent {
             val authViewModel: AuthViewModel = viewModel()
             val isAuthenticated by authViewModel.isAuthenticated.collectAsState()
-            val navController = rememberNavController()  // Moved here for global use
+            val navController = rememberNavController()
 
             FantasyStocksTheme {
                 NavHost(
@@ -116,7 +112,6 @@ object MainApp {
     const val route = "main_app"
 }
 
-
 // Define the ProfileScreen composable.
 @Composable
 fun ProfileScreen(
@@ -139,7 +134,6 @@ fun ProfileScreen(
 fun LoadingScreen(modifier: Modifier = Modifier) {
     // Your loading screen implementation
 }
-
 
 // Define the FriendsListScreen composable.
 @Composable
