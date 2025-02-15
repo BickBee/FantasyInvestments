@@ -13,7 +13,7 @@ import org.junit.Test
 class StockApiServiceTest {
     @Test
     fun `test getStockData returns valid response`() = runBlocking {
-        val response = StockApiService.getStockData("AAPL", "2025-02-11", "2025-02-12")
+        val response = StockApiService.getStockData("AAPL", "2025-02-12", "2025-02-12")
 
         assertNotNull(response)
         assertEquals("AAPL", response?.ticker)
