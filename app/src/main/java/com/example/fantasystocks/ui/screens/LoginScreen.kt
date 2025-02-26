@@ -52,6 +52,7 @@ fun LoginScreen(
 
         Button(
             onClick = {
+//                onLoginSuccess() // for instant login DEV...
                 authViewModel.signInWithEmail(email, password)
             },
             modifier = Modifier.fillMaxWidth()

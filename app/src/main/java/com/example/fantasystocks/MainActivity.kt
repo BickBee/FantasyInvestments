@@ -1,6 +1,5 @@
 package com.example.fantasystocks
 
-import android.app.ActionBar
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -19,52 +18,36 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MediumTopAppBar
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SmallTopAppBar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.platform.LocalContext
-import androidx.credentials.CredentialManager
-import androidx.credentials.GetCredentialRequest
-import androidx.credentials.exceptions.GetCredentialException
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.fantasystocks.database.SupabaseClient
-import com.example.fantasystocks.ui.Home
+import androidx.navigation.navArgument
 import com.example.fantasystocks.ui.News
-import com.example.fantasystocks.ui.Stocks
-import com.example.fantasystocks.ui.homeDestination
+import com.example.fantasystocks.ui.news.NewsArticle
+import com.example.fantasystocks.ui.screens.Home
+import com.example.fantasystocks.ui.screens.Stocks
+import com.example.fantasystocks.ui.screens.homeDestination
+import com.example.fantasystocks.ui.news.newsArticleDestination
 import com.example.fantasystocks.ui.newsDestination
 import com.example.fantasystocks.ui.screens.LoginScreen
-import com.example.fantasystocks.ui.stocksDestination
+import com.example.fantasystocks.ui.screens.stocksDestination
 import com.example.fantasystocks.ui.theme.FantasyStocksTheme
 import com.example.fantasystocks.ui.viewmodels.AuthViewModel
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
-import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
-import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
-import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.auth.handleDeeplinks // NEEDED?
-import io.github.jan.supabase.auth.providers.Google
-import io.github.jan.supabase.auth.providers.builtin.IDToken
-import io.github.jan.supabase.exceptions.RestException
-import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
-import java.security.MessageDigest
-import java.util.UUID
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -212,7 +195,8 @@ fun MyApp() {
                         onClick = {
                             navController.navigate(navItem.route) {
                                 popUpTo(navController.graph.startDestinationId) {
-                                    saveState = true
+                                    inclusive = false
+//                                    saveState = true
                                 }
                                 launchSingleTop = true
                                 restoreState = true
@@ -229,8 +213,16 @@ fun MyApp() {
             modifier = Modifier.padding(innerPadding) // Apply padding
         ) {
             homeDestination()
-            newsDestination()
+            newsDestination(navController)
             stocksDestination()
+            // TODO: For some reason the nav bar gets greyed out when navigating to news article
+//            composable(
+//                route = "news_article?articlePrimaryKey={article.primaryKey}",
+//                arguments = listOf(navArgument("articlePrimaryKey") { defaultValue = -1 })
+//            ) { backStackEntry ->
+//                val articlePrimaryKey = backStackEntry.arguments?.getString("articlePrimaryKey")?.toIntOrNull() ?: -1
+//                NewsArticle(navController, articlePrimaryKey)
+//            }
             composable<Profile> { backStackEntry ->
                 val name = backStackEntry.arguments?.getString("name") ?: "Unknown"
                 ProfileScreen(

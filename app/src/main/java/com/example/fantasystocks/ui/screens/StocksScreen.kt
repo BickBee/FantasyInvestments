@@ -1,4 +1,4 @@
-package com.example.fantasystocks.ui
+package com.example.fantasystocks.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,7 +10,6 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import com.example.fantasystocks.API.StockApiService
-import com.example.fantasystocks.API.StockResponse
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
