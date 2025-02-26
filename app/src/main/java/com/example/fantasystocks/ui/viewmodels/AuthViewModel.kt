@@ -1,14 +1,9 @@
 package com.example.fantasystocks.ui.viewmodels
 
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fantasystocks.database.SupabaseClient
 import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.auth.providers.builtin.Email
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
