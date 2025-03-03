@@ -35,15 +35,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import com.example.fantasystocks.ui.News
-import com.example.fantasystocks.ui.news.NewsArticle
+import com.example.fantasystocks.ui.newsDestination
 import com.example.fantasystocks.ui.screens.Home
+import com.example.fantasystocks.ui.screens.LoginScreen
 import com.example.fantasystocks.ui.screens.Stocks
 import com.example.fantasystocks.ui.screens.homeDestination
-import com.example.fantasystocks.ui.news.newsArticleDestination
-import com.example.fantasystocks.ui.newsDestination
-import com.example.fantasystocks.ui.screens.LoginScreen
 import com.example.fantasystocks.ui.screens.stocksDestination
 import com.example.fantasystocks.ui.theme.FantasyStocksTheme
 import com.example.fantasystocks.ui.viewmodels.AuthViewModel

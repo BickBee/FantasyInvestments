@@ -88,4 +88,10 @@ dependencies {
     implementation (libs.googleid)
     // SUPABASE DEPENDENCIES END
 
+    implementation(libs.jsoup)
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.compose.ui.test.junit4)
+    androidTestImplementation(libs.navigation.testing)
+    androidTestImplementation(libs.test.core)
+    debugImplementation(libs.compose.test.manifest)
 }
