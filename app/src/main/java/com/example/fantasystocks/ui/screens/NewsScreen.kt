@@ -4,8 +4,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -17,21 +15,10 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import kotlinx.serialization.Serializable
-import com.example.fantasystocks.R
+import com.example.fantasystocks.ui.news.newsArticleContents
 
 @Serializable
 object News
-
-data class NewsArticle(val primaryKey: Int, val title: String, val description: String, val imageRes: Int)
-
-val newsArticles = listOf(
-    NewsArticle(1, "Investment Strategies 101", "Beginner-friendly guide to investing", R.drawable.ic_launcher_background),
-    NewsArticle(2, "Virtual Stock Market", "Compete with friends in simulated trading", R.drawable.ic_launcher_foreground),
-    NewsArticle(3, "Market Trends 2024", "Latest updates on stock market trends", R.drawable.ic_launcher_background),
-    NewsArticle(4, "Crypto Insights", "Deep dive into the cryptocurrency world", R.drawable.ic_launcher_foreground),
-    NewsArticle(5, "Tech Stocks to Watch", "Emerging tech stocks with potential", R.drawable.ic_launcher_background),
-    NewsArticle(6, "Real Estate Investing", "Understanding the housing market and investment opportunities", R.drawable.ic_launcher_foreground)
-)
 
 fun NavGraphBuilder.newsDestination(navController: NavController) {
     composable<News> { NewsScreen(navController) }
@@ -40,7 +27,7 @@ fun NavGraphBuilder.newsDestination(navController: NavController) {
         arguments = listOf(navArgument("articlePrimaryKey") { defaultValue = -1 })
     ) { backStackEntry ->
         val articlePrimaryKey = backStackEntry.arguments?.getInt("articlePrimaryKey") ?: -1
-        com.example.fantasystocks.ui.news.NewsArticle(navController, articlePrimaryKey)
+        com.example.fantasystocks.ui.news.NewsArticle(navController, newsArticleContents[articlePrimaryKey - 1])
     }
 }
 
@@ -59,8 +46,8 @@ fun NewsScreen(navController: NavController) {
             )
         }
 
-        items(newsArticles.size) { index ->
-            val article = newsArticles[index]
+        items(newsArticleContents.size) { index ->
+            val article = newsArticleContents[index]
             NewsCard(
                 title = article.title,
                 description = article.description,
@@ -101,24 +88,6 @@ private fun NewsCard(
                 Text(text = title, style = MaterialTheme.typography.titleMedium)
                 Text(text = description, style = MaterialTheme.typography.bodyMedium)
             }
-        }
-    }
-}
-
-@Composable
-fun NewsArticleScreen(navController: NavController, articlePrimaryKey: Int) {
-    val article = newsArticles.find { it.primaryKey == articlePrimaryKey }
-
-    Column(modifier = Modifier.padding(16.dp)) {
-        IconButton(onClick = { navController.popBackStack() }) {
-            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-        }
-        if (article != null) {
-            Text(text = article.title, style = MaterialTheme.typography.headlineMedium)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = "Full article content for ${article.title}", style = MaterialTheme.typography.bodyMedium)
-        } else {
-            Text(text = "Article not found", style = MaterialTheme.typography.headlineMedium)
         }
     }
 }

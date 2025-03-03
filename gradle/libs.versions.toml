@@ -16,6 +16,10 @@ serialization = "1.6.3"
 kotlinx-coroutines = "1.7.3"
 mockk = "1.13.5"
 ktor = "3.0.2"
+androidx-compose-ui-test = "1.4.3"
+androidx-navigation-testing = "2.5.3"
+androidx-test-core = "1.4.0"
+androidx-compose-test-manifest = "1.4.3"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -48,7 +52,11 @@ googleid = { module = "com.google.android.libraries.identity.googleid:googleid",
 ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
-
+jsoup = "org.jsoup:jsoup:1.15.3"
+compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4", version.ref = "androidx-compose-ui-test" }
+navigation-testing = { module = "androidx.navigation:navigation-testing", version.ref = "androidx-navigation-testing" }
+test-core = { module = "androidx.test:core", version.ref = "androidx-test-core" }
+compose-test-manifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "androidx-compose-test-manifest" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
