@@ -10,13 +10,21 @@ import io.github.jan.supabase.postgrest.result.PostgrestResult
 import kotlinx.coroutines.*
 import kotlinx.serialization.Serializable
 
-class SupabaseClient {
-        val supabase = createSupabaseClient(
-        supabaseUrl = "https://lnfecoxuwybrlhzjqxkb.supabase.co",
-        supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxuZmVjb3h1d3licmxoempxeGtiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg5NDQwMTMsImV4cCI6MjA1NDUyMDAxM30.wCjoCRqMTLOWyPxX-9lMohKbxESbP8z6G0FM2Gk3GLY"
-        ) {
+object SupabaseClient {
+    private const val SUPABASE_URL = "https://lnfecoxuwybrlhzjqxkb.supabase.co"
+    private const val SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxuZmVjb3h1d3licmxoempxeGtiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg5NDQwMTMsImV4cCI6MjA1NDUyMDAxM30.wCjoCRqMTLOWyPxX-9lMohKbxESbP8z6G0FM2Gk3GLY"
+
+    val supabase = createSupabaseClient(
+        supabaseUrl = SUPABASE_URL,
+        supabaseKey = SUPABASE_KEY
+    ) {
         install(Postgrest)
-            install(Auth)
+        install(Auth) {
+            // TODO: debug why Enable session persistence in Auth module doesnt work
+            autoSaveToStorage = true
+            autoLoadFromStorage = true
+            alwaysAutoRefresh = true
+        }
     }
 
     fun load() {
@@ -28,19 +36,20 @@ class SupabaseClient {
         }
         println(temp)
     }
+    
     // Just a skeleton function, need to decodeList after select if you want it to be displayed
     fun queryTable(tableName: String) {
         var temp: PostgrestResult? = null
         runBlocking {
             withContext(Dispatchers.IO) {
-                temp = supabase.from("instruments").select()
+                temp = supabase.from(tableName).select()
             }
         }
         println(temp)
     }
 
-    fun signUpNewUser(emailInput: String, passwordInput: String) {
-        runBlocking {
+    suspend fun signUpNewUser(emailInput: String, passwordInput: String) {
+        withContext(Dispatchers.IO) {
             supabase.auth.signUpWith(Email) {
                 email = emailInput
                 password = passwordInput
@@ -48,14 +57,36 @@ class SupabaseClient {
         }
     }
 
-    fun signInExistingUser(emailInput: String, passwordInput: String) {
-        runBlocking {
+    suspend fun signInExistingUser(emailInput: String, passwordInput: String) {
+        withContext(Dispatchers.IO) {
             supabase.auth.signInWith(Email) {
                 email = emailInput
                 password = passwordInput
             }
         }
     }
+
+    suspend fun resetPasswordForEmail(email: String) {
+        withContext(Dispatchers.IO) {
+            supabase.auth.resetPasswordForEmail(email)
+        }
+    }
+
+    suspend fun updatePassword(newPassword: String) {
+        withContext(Dispatchers.IO) {
+            supabase.auth.updateUser {
+                password = newPassword
+            }
+        }
+    }
+    
+    suspend fun signOut() {
+        withContext(Dispatchers.IO) {
+            supabase.auth.signOut()
+        }
+    }
+    
+    fun getCurrentUser() = supabase.auth.currentSessionOrNull()?.user
 }
 
 @Serializable
