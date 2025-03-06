@@ -38,7 +38,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -47,6 +46,7 @@ import com.example.fantasystocks.ui.News
 import com.example.fantasystocks.ui.newsDestination
 import com.example.fantasystocks.ui.screens.AuthScreen
 import com.example.fantasystocks.ui.screens.Home
+import com.example.fantasystocks.ui.screens.Portfolio
 import com.example.fantasystocks.ui.screens.Stocks
 import com.example.fantasystocks.ui.screens.authScreens
 import com.example.fantasystocks.ui.screens.homeDestination
@@ -54,6 +54,9 @@ import com.example.fantasystocks.ui.screens.stocksDestination
 import com.example.fantasystocks.ui.theme.FantasyStocksTheme
 import com.example.fantasystocks.ui.viewmodels.AuthViewModel
 import kotlinx.serialization.Serializable
+import com.example.fantasystocks.ui.screens.stockViewer
+import com.example.fantasystocks.ui.screens.Stock
+import com.example.fantasystocks.ui.screens.portfolioViewer
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,7 +69,7 @@ class MainActivity : ComponentActivity() {
             val navController = rememberNavController()
             val errorMessage by authViewModel.errorMessage.collectAsState()
             val context = LocalContext.current
-            
+
             // Show toast for error messages
             LaunchedEffect(errorMessage) {
                 errorMessage?.let { message ->
@@ -81,7 +84,7 @@ class MainActivity : ComponentActivity() {
 
             FantasyStocksTheme {
                 val snackbarHostState = remember { SnackbarHostState() }
-                
+
                 NavHost(
                     navController = navController,
                     startDestination = if (isAuthenticated == true) MainApp.route else AuthScreen.Login.route
@@ -96,7 +99,7 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     )
-                    
+
                     composable(MainApp.route) {
                         MyApp(
                             onSignOut = {
@@ -146,18 +149,18 @@ fun ProfileScreen(
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(bottom = 24.dp)
         )
-        
+
         Text("Name: ${profile.name}")
         Text("Email: ${profile.email}")
-        
+
         Button(onClick = onNavigateToChangePassword) {
             Text("Change Password")
         }
-        
+
         Button(onClick = onNavigateToFriendsList) {
             Text("Friends List")
         }
-        
+
         Button(
             onClick = onSignOut,
             modifier = Modifier.padding(top = 24.dp)
@@ -198,7 +201,7 @@ fun MyApp(
         NavItem("Profile", Icons.Default.Person, Profile())
     )
     val baseRoutes = navItemList.map {item -> item.route.javaClass.toString().removePrefix("class ")}
-    
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
@@ -207,12 +210,12 @@ fun MyApp(
             val isBaseRoute = baseRoutes.contains(currentRoute)
 
             TopAppBar(
-                title = { 
+                title = {
                     Text(
                         text = "Fantasy Investments",
                         style = MaterialTheme.typography.headlineMedium,
                         modifier = Modifier.padding(bottom = 16.dp)
-                    ) 
+                    )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -244,14 +247,13 @@ fun MyApp(
 
                 navItemList.forEach { navItem ->
                     NavigationBarItem(
-                        enabled = true,
                         selected = currentRoute == navItem.route.javaClass.toString().removePrefix("class "),
                         icon = { Icon(imageVector = navItem.icon, contentDescription = navItem.label) },
                         label = { Text(navItem.label) },
                         onClick = {
                             navController.navigate(navItem.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
+                                popUpTo(navController.graph.startDestinationId) {
+                                    inclusive = false
                                 }
                                 launchSingleTop = true
                                 restoreState = true
@@ -267,11 +269,21 @@ fun MyApp(
             startDestination = Home,
             modifier = Modifier.padding(innerPadding)
         ) {
-            homeDestination()
+            homeDestination(goToPortfolioViewer = {session_name -> navController.navigate(Portfolio(session_name))})
             newsDestination(navController)
-            stocksDestination()
-            
-            composable<Profile> {
+            stocksDestination(goToStockViewer = {stock -> navController.navigate(Stock(stock))})
+            stockViewer()
+            portfolioViewer(goToStockViewer = {stock -> navController.navigate(Stock(stock))})
+            // TODO: For some reason the nav bar gets greyed out when navigating to news article
+//            composable(
+//                route = "news_article?articlePrimaryKey={article.primaryKey}",
+//                arguments = listOf(navArgument("articlePrimaryKey") { defaultValue = -1 })
+//            ) { backStackEntry ->
+//                val articlePrimaryKey = backStackEntry.arguments?.getString("articlePrimaryKey")?.toIntOrNull() ?: -1
+//                NewsArticle(navController, articlePrimaryKey)
+//            }
+            composable<Profile> { backStackEntry ->
+                val name = backStackEntry.arguments?.getString("name") ?: "Unknown"
                 ProfileScreen(
                     onNavigateToFriendsList = {
                         navController.navigate(FriendsList)
@@ -280,7 +292,7 @@ fun MyApp(
                     onSignOut = onSignOut
                 )
             }
-            
+
             composable<FriendsList> {
                 FriendsListScreen(
                     onNavigateToProfile = {

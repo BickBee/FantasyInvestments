@@ -1,5 +1,6 @@
 package com.example.fantasystocks.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
@@ -13,12 +14,12 @@ import kotlinx.serialization.Serializable
 @Serializable
 object Home
 
-fun NavGraphBuilder.homeDestination() {
-    composable<Home> { HomeScreen() }
+fun NavGraphBuilder.homeDestination(goToPortfolioViewer: (String) -> Unit) {
+    composable<Home> { HomeScreen(goToPortfolioViewer) }
 }
 
 @Composable
-fun HomeScreen() {
+fun HomeScreen(goToPortfolioViewer: (String) -> Unit) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -63,7 +64,8 @@ fun HomeScreen() {
             SessionItem(
                 title = "The bois",
                 subtitle = "Join the competition",
-                date = "Jan 15, 2025"
+                date = "Jan 15, 2025",
+                goToPortfolioViewer = goToPortfolioViewer
             )
         }
 
@@ -79,12 +81,14 @@ fun HomeScreen() {
             SessionItem(
                 title = "Stock Market Challenge",
                 subtitle = "Join the competition",
-                date = "Feb 8, 2025"
+                date = "Feb 8, 2025",
+                goToPortfolioViewer = goToPortfolioViewer
             )
             SessionItem(
                 title = "Investment Workshop",
                 subtitle = "Enhance your knowledge",
-                date = "Mar 1, 2025"
+                date = "Mar 1, 2025",
+                goToPortfolioViewer = goToPortfolioViewer
             )
         }
     }
@@ -94,7 +98,8 @@ fun HomeScreen() {
 private fun SessionItem(
     title: String,
     subtitle: String,
-    date: String
+    date: String,
+    goToPortfolioViewer: (String) -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -104,7 +109,8 @@ private fun SessionItem(
         Row(
             modifier = Modifier
                 .padding(16.dp)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .clickable { goToPortfolioViewer(title) },
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column {

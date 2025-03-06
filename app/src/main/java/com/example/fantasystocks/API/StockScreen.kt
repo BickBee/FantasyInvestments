@@ -33,8 +33,9 @@ object StockApiService {
     }
 
     suspend fun getStockData(ticker: String, fromDate: String, toDate: String): StockResponse? {
-        val url = "$BASE_URL/$ticker/range/1/day/$fromDate/$toDate?adjusted=true&sort=asc&apiKey=$API_KEY"
+        println("getting stock data")
 
+        val url = "$BASE_URL/$ticker/range/1/day/$fromDate/$toDate?adjusted=true&sort=asc&apiKey=$API_KEY"
         try
         {
             val response: HttpResponse = client.get(url)
@@ -43,6 +44,7 @@ object StockApiService {
         }
         catch (e: Exception)
         {
+            println(e)
             return null
         }
     }
