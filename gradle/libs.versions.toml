@@ -20,6 +20,7 @@ androidx-compose-ui-test = "1.4.3"
 androidx-navigation-testing = "2.5.3"
 androidx-test-core = "1.4.0"
 androidx-compose-test-manifest = "1.4.3"
+vico = "2.0.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -57,6 +58,17 @@ compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4", versio
 navigation-testing = { module = "androidx.navigation:navigation-testing", version.ref = "androidx-navigation-testing" }
 test-core = { module = "androidx.test:core", version.ref = "androidx-test-core" }
 compose-test-manifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "androidx-compose-test-manifest" }
+# For Jetpack Compose.
+vico-compose = { group = "com.patrykandpatrick.vico", name = "compose", version.ref = "vico" }
+
+# For Material 2 theming in Jetpack Compose.
+vico-compose-m2 = { group = "com.patrykandpatrick.vico", name = "compose-m2", version.ref = "vico" }
+
+# For Material 3 theming in Jetpack Compose.
+vico-compose-m3 = { group = "com.patrykandpatrick.vico", name = "compose-m3", version.ref = "vico" }
+
+# For the view system.
+vico-views = { group = "com.patrykandpatrick.vico", name = "views", version.ref = "vico" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

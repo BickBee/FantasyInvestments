@@ -7,12 +7,12 @@ plugins {
 
 android {
     namespace = "com.example.fantasystocks"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.fantasystocks"
-        minSdk = 21
-        targetSdk = 34
+        minSdk = 26
+        targetSdk = 35
         versionCode = 1
         versionName = "0.10"
 
@@ -64,6 +64,12 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    // VICO - chart library
+    implementation(libs.vico.compose)
+    implementation(libs.vico.compose.m2)
+    implementation(libs.vico.compose.m3)
+    implementation(libs.vico.views)
+    //
     // __NAVIGATION DEPENDENCIES START__
     implementation(libs.navigation.compose)
     implementation(libs.kotlinx.serialization.json)
