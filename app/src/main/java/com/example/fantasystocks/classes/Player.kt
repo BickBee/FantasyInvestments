@@ -1,5 +1,10 @@
 package com.example.fantasystocks.classes
 
+import com.example.fantasystocks.ui.viewmodels.doubleStringToMoneyString
+import kotlinx.serialization.Serializable
+import java.util.Locale
+
+@Serializable
 data class Player (
     val name: String,
     val id: Int,

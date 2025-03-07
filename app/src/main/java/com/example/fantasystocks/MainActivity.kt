@@ -42,11 +42,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.fantasystocks.classes.League
 import com.example.fantasystocks.ui.News
 import com.example.fantasystocks.ui.newsDestination
 import com.example.fantasystocks.ui.screens.AuthScreen
 import com.example.fantasystocks.ui.screens.Home
 import com.example.fantasystocks.ui.screens.Portfolio
+import com.example.fantasystocks.ui.screens.LeagueScreen
 import com.example.fantasystocks.ui.screens.Stocks
 import com.example.fantasystocks.ui.screens.authScreens
 import com.example.fantasystocks.ui.screens.homeDestination
@@ -56,7 +58,9 @@ import com.example.fantasystocks.ui.viewmodels.AuthViewModel
 import kotlinx.serialization.Serializable
 import com.example.fantasystocks.ui.screens.stockViewer
 import com.example.fantasystocks.ui.screens.Stock
+import com.example.fantasystocks.ui.screens.leagueScreenViewer
 import com.example.fantasystocks.ui.screens.portfolioViewer
+import kotlinx.serialization.json.Json
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -269,11 +273,13 @@ fun MyApp(
             startDestination = Home,
             modifier = Modifier.padding(innerPadding)
         ) {
-            homeDestination(goToPortfolioViewer = {session_name -> navController.navigate(Portfolio(session_name))})
+            //homeDestination(goToPortfolioViewer = {session_name -> navController.navigate(Portfolio(session_name))})
+            homeDestination(goToLeagueScreen = {leagueJson -> navController.navigate(LeagueScreen(leagueJson))})
             newsDestination(navController)
             stocksDestination(goToStockViewer = {stock -> navController.navigate(Stock(stock))})
             stockViewer()
             portfolioViewer(goToStockViewer = {stock -> navController.navigate(Stock(stock))})
+            leagueScreenViewer(goToStockViewer = {stock -> navController.navigate(Stock(stock))})
             // TODO: For some reason the nav bar gets greyed out when navigating to news article
 //            composable(
 //                route = "news_article?articlePrimaryKey={article.primaryKey}",
@@ -300,6 +306,7 @@ fun MyApp(
                     }
                 )
             }
+
         }
     }
 }
