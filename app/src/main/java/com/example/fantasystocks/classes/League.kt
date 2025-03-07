@@ -1,10 +1,22 @@
 package com.example.fantasystocks.classes
 
-import java.util.Calendar
+import kotlinx.datetime.Clock
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-class League(val startDate: Calendar, var name: String) {
+@Serializable
+data class League(
+    val id: Int? = null,
+    var name: String,
+    @SerialName("start_date")
+    var startDate: LocalDate? = null,
+    @SerialName("end_date")
+    var endDate: LocalDate? = null)
+{
     private val players: MutableList<Player> = mutableListOf()
-    private var endDate: Calendar? = null
 
     fun getPlayers(): List<Player> = players
     fun addPlayer(player: Player) = players.add(player)
@@ -18,9 +30,10 @@ class League(val startDate: Calendar, var name: String) {
         return false
     }
 
-    fun getEndDate() = endDate
-    fun changeEndDate(date: Calendar): Boolean {
-        if (date.after(Calendar.getInstance()) && date.after(startDate)) {
+    fun changeEndDate(date: LocalDate?): Boolean {
+        val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+
+        if (date != null && date >= today && date > startDate!!) {
             endDate = date
             return true
         }

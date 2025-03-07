@@ -3,8 +3,10 @@ package com.example.fantasystocks.classes
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class Stock (
+data class User(
+    val id: Int,
+    val username: String,
+    val email: String,
     val name: String,
-    val ticker: String,
-    val price: Double
+    val password: String
 )

@@ -1,5 +1,6 @@
 package com.example.fantasystocks.classes
 
+import kotlinx.datetime.LocalDate
 import org.junit.Test
 import org.junit.Assert.*
 import java.util.Calendar
@@ -16,8 +17,8 @@ class LeaderboardTest {
             mutableMapOf(Pair(stock2, 1)))
         val player3 = Player("Charlie", 105, 1000.0, 100.0,
             mutableMapOf(Pair(stock3, 1)))
-        val start = Calendar.getInstance().apply { set(2025, Calendar.JANUARY, 21) }
-        val league = League(start, "Competition")
+        val start = LocalDate(2025, 1, 21)
+        val league = League(101, "Test",  start, null)
         league.addPlayer(player1)
         league.addPlayer(player2)
         league.addPlayer(player3)

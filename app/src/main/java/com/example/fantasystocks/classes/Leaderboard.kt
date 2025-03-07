@@ -3,13 +3,15 @@ package com.example.fantasystocks.classes
 class Leaderboard(private val league: League) {
     enum class SortBy {
         NAME,
-        TOTAL_RETURNS
+        TOTAL_RETURNS,
+        VALUE
     }
 
-    fun sort(sortBy: SortBy = SortBy.TOTAL_RETURNS) : List<Player> {
+    fun sort(sortBy: SortBy = SortBy.VALUE) : List<Player> {
         val sortedPlayers = when (sortBy) {
             SortBy.NAME -> league.getPlayers().sortedBy { it.name }
             SortBy.TOTAL_RETURNS -> league.getPlayers().sortedByDescending { it.totalReturn() }
+            SortBy.VALUE -> league.getPlayers().sortedByDescending { it.getTotalValue() }
         }
         return sortedPlayers
     }

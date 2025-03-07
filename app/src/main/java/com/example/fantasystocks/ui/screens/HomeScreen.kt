@@ -3,23 +3,58 @@ package com.example.fantasystocks.ui.screens
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
+import com.example.fantasystocks.classes.League
+import com.example.fantasystocks.ui.viewmodels.HomeViewModel
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 @Serializable
 object Home
 
+/*
 fun NavGraphBuilder.homeDestination(goToPortfolioViewer: (String) -> Unit) {
     composable<Home> { HomeScreen(goToPortfolioViewer) }
 }
+ */
+
+fun NavGraphBuilder.homeDestination(goToLeagueScreen: (String) -> Unit) {
+    composable<Home> { HomeScreen(goToLeagueScreen) }
+}
 
 @Composable
-fun HomeScreen(goToPortfolioViewer: (String) -> Unit) {
+fun HomeScreen(
+    //goToPortfolioViewer: (String) -> Unit,
+    goToLeagueScreen: (String) -> Unit
+) {
+    val viewModel: HomeViewModel = viewModel<HomeViewModel>()
+    val leagueCreationResult by viewModel.leagueCreationResult.collectAsState()
+    val leagues by viewModel.leagues.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.getLeagues()
+    }
+
+    LaunchedEffect(leagueCreationResult) {
+        leagueCreationResult?.let { league ->
+            goToLeagueScreen(Json.encodeToString(league))
+            viewModel.resetLeagueCreationResult()
+        }
+    }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -28,78 +63,69 @@ fun HomeScreen(goToPortfolioViewer: (String) -> Unit) {
         
         item {
             Button(
-                onClick = { /* TODO */ },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp)
-            ) {
-                Text("Compete Now")
-            }
-        }
-        
-        item {
-            Button(
-                onClick = { /* TODO */ },
+                onClick = { viewModel.openLeagueDialog() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 4.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                )
             ) {
-                Text("Start New Session")
+                Text("Start New League")
             }
         }
 
         item {
             Text(
-                text = "Your Sessions",
+                text = "Your Leagues",
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(vertical = 16.dp)
             )
         }
 
-        item {
-            SessionItem(
-                title = "The bois",
-                subtitle = "Join the competition",
-                date = "Jan 15, 2025",
-                goToPortfolioViewer = goToPortfolioViewer
-            )
+        if (viewModel.initLoading) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+        } else {
+            items(leagues) { league ->
+                SessionItem(
+                    league = league,
+                    subtitle = "Join the competition",
+                    goToLeagueScreen = goToLeagueScreen
+                )
+            }
+            /* TODO separate ongoing with upcoming sessions
+            item {
+                Text(
+                    text = "Upcoming Sessions",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(vertical = 16.dp)
+                )
+            }
+             */
         }
 
-        item {
-            Text(
-                text = "Upcoming Sessions",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(vertical = 16.dp)
-            )
-        }
 
-        item {
-            SessionItem(
-                title = "Stock Market Challenge",
-                subtitle = "Join the competition",
-                date = "Feb 8, 2025",
-                goToPortfolioViewer = goToPortfolioViewer
-            )
-            SessionItem(
-                title = "Investment Workshop",
-                subtitle = "Enhance your knowledge",
-                date = "Mar 1, 2025",
-                goToPortfolioViewer = goToPortfolioViewer
-            )
-        }
+    }
+    if (viewModel.isDialogShown) {
+        LeagueDialog(
+            viewModel = viewModel,
+            onDismiss = { viewModel.closeLeagueDialog() },
+            onConfirm = { }
+        )
     }
 }
 
 @Composable
 private fun SessionItem(
-    title: String,
+    league: League,
     subtitle: String,
-    date: String,
-    goToPortfolioViewer: (String) -> Unit
+    goToLeagueScreen: (String) -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -110,14 +136,15 @@ private fun SessionItem(
             modifier = Modifier
                 .padding(16.dp)
                 .fillMaxWidth()
-                .clickable { goToPortfolioViewer(title) },
+                .clickable { goToLeagueScreen(Json.encodeToString(league)) },
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column {
-                Text(text = title, style = MaterialTheme.typography.titleMedium)
+                Text(text = league.name, style = MaterialTheme.typography.titleMedium)
                 Text(text = subtitle, style = MaterialTheme.typography.bodyMedium)
             }
-            Text(text = date, style = MaterialTheme.typography.bodySmall)
+            // TODO change the date format from 2025-03-06 to Mar 6, 2025
+            Text(text = league.startDate.toString(), style = MaterialTheme.typography.bodySmall)
         }
     }
 }
