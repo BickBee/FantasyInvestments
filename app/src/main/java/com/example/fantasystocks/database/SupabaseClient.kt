@@ -7,6 +7,7 @@ import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.result.PostgrestResult
+import io.github.jan.supabase.storage.Storage
 import kotlinx.coroutines.*
 import kotlinx.serialization.Serializable
 
@@ -14,17 +15,22 @@ object SupabaseClient {
     private const val SUPABASE_URL = "https://lnfecoxuwybrlhzjqxkb.supabase.co"
     private const val SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxuZmVjb3h1d3licmxoempxeGtiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg5NDQwMTMsImV4cCI6MjA1NDUyMDAxM30.wCjoCRqMTLOWyPxX-9lMohKbxESbP8z6G0FM2Gk3GLY"
 
-    val supabase = createSupabaseClient(
-        supabaseUrl = SUPABASE_URL,
-        supabaseKey = SUPABASE_KEY
-    ) {
-        install(Postgrest)
-        install(Auth) {
-            // TODO: debug why Enable session persistence in Auth module doesnt work
-            autoSaveToStorage = true
-            autoLoadFromStorage = true
-            alwaysAutoRefresh = true
-        }
+        val supabase = createSupabaseClient(
+            supabaseUrl = SUPABASE_URL,
+            supabaseKey = SUPABASE_KEY
+        ) {
+            install(Postgrest)
+            install(Storage)
+            install(Auth) {
+                autoSaveToStorage = true
+                autoLoadFromStorage = true
+                alwaysAutoRefresh = true
+            }
+    }
+
+    // Get authentication state
+    fun isAuthenticated(): Boolean {
+        return supabase.auth.currentSessionOrNull() != null
     }
 
     fun load() {
@@ -36,7 +42,7 @@ object SupabaseClient {
         }
         println(temp)
     }
-    
+
     // Just a skeleton function, need to decodeList after select if you want it to be displayed
     fun queryTable(tableName: String) {
         var temp: PostgrestResult? = null
@@ -79,13 +85,13 @@ object SupabaseClient {
             }
         }
     }
-    
+
     suspend fun signOut() {
         withContext(Dispatchers.IO) {
             supabase.auth.signOut()
         }
     }
-    
+
     fun getCurrentUser() = supabase.auth.currentSessionOrNull()?.user
 }
 

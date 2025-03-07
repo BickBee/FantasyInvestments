@@ -4,7 +4,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fantasystocks.database.SupabaseClient
-import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.exceptions.RestException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,7 +13,7 @@ import kotlinx.coroutines.launch
 
 class AuthViewModel : ViewModel() {
     private val TAG = "AuthViewModel"
-    
+
     private val _isAuthenticated = MutableStateFlow<Boolean?>(null)
     val isAuthenticated: StateFlow<Boolean?> = _isAuthenticated.asStateFlow()
 
@@ -37,10 +36,11 @@ class AuthViewModel : ViewModel() {
     fun checkAuthState() {
         viewModelScope.launch {
             try {
-                val session = SupabaseClient.supabase.auth.currentSessionOrNull()
-                _isAuthenticated.value = session != null
-                if (session != null) {
-                    Log.d(TAG, "Current session: ${session.user?.email}")
+                _isAuthenticated.value = SupabaseClient.isAuthenticated()
+
+                val currentUser = SupabaseClient.getCurrentUser()
+                if (currentUser != null) {
+                    Log.d(TAG, "Current session found for user: ${currentUser.email}")
                 } else {
                     Log.d(TAG, "No active session found")
                 }
@@ -57,7 +57,7 @@ class AuthViewModel : ViewModel() {
                 _isLoading.value = true
                 _errorMessage.value = null
                 Log.d(TAG, "Attempting to sign in with email: $email")
-                
+
                 try {
                     SupabaseClient.signInExistingUser(email, password)
                     // Check auth state to confirm success
@@ -81,6 +81,10 @@ class AuthViewModel : ViewModel() {
                 _errorMessage.value = "Sign in failed"
                 _isAuthenticated.value = false
                 _isLoading.value = false
+            } finally {
+                if (_isAuthenticated.value == true) {
+                    _isLoading.value = false
+                }
             }
         }
     }
@@ -90,7 +94,7 @@ class AuthViewModel : ViewModel() {
             try {
                 _isLoading.value = true
                 _errorMessage.value = null
-                
+
                 // Validate password
                 if (password.length < 6) {
                     Log.w(TAG, "Password too short during signup attempt")
@@ -127,14 +131,14 @@ class AuthViewModel : ViewModel() {
             }
         }
     }
-    
+
     fun resetPassword(email: String) {
         viewModelScope.launch {
             try {
                 _isLoading.value = true
                 _errorMessage.value = null
                 Log.d(TAG, "Attempting to reset password for: $email")
-                
+
                 try {
                     SupabaseClient.resetPasswordForEmail(email)
                     _isPasswordResetSent.value = true
@@ -154,14 +158,14 @@ class AuthViewModel : ViewModel() {
             }
         }
     }
-    
+
     fun changePassword(currentPassword: String, newPassword: String) {
         viewModelScope.launch {
             try {
                 _isLoading.value = true
                 _errorMessage.value = null
                 Log.d(TAG, "Attempting to change password")
-                
+
                 try {
                     // First verify current password by attempting to re-authenticate
                     val currentUser = SupabaseClient.getCurrentUser()
@@ -191,7 +195,7 @@ class AuthViewModel : ViewModel() {
                     Log.e(TAG, "Failed to change password: ${e.message}", e)
                     _errorMessage.value = "Failed to change password"
                 }
-                
+
                 _isLoading.value = false
             } catch (e: Exception) {
                 Log.e(TAG, "Unexpected error during password change: ${e.message}", e)
@@ -200,7 +204,7 @@ class AuthViewModel : ViewModel() {
             }
         }
     }
-    
+
     fun signOut() {
         viewModelScope.launch {
             try {
@@ -217,11 +221,11 @@ class AuthViewModel : ViewModel() {
             }
         }
     }
-    
+
     fun clearErrors() {
         _errorMessage.value = null
     }
-    
+
     fun resetState() {
         _isPasswordResetSent.value = false
         _isPasswordChanged.value = false
