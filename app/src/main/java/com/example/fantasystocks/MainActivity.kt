@@ -5,9 +5,6 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -33,7 +30,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -42,16 +38,18 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.fantasystocks.classes.League
 import com.example.fantasystocks.ui.News
 import com.example.fantasystocks.ui.newsDestination
 import com.example.fantasystocks.ui.screens.AuthScreen
+import com.example.fantasystocks.ui.screens.FriendsListScreen
 import com.example.fantasystocks.ui.screens.Home
-import com.example.fantasystocks.ui.screens.Portfolio
+import com.example.fantasystocks.ui.screens.ProfileDestination
+import com.example.fantasystocks.ui.screens.ProfileScreen
 import com.example.fantasystocks.ui.screens.LeagueScreen
 import com.example.fantasystocks.ui.screens.Stocks
 import com.example.fantasystocks.ui.screens.authScreens
 import com.example.fantasystocks.ui.screens.homeDestination
+import com.example.fantasystocks.ui.screens.profileDestination
 import com.example.fantasystocks.ui.screens.stocksDestination
 import com.example.fantasystocks.ui.theme.FantasyStocksTheme
 import com.example.fantasystocks.ui.viewmodels.AuthViewModel
@@ -84,6 +82,11 @@ class MainActivity : ComponentActivity() {
                     }
                     Toast.makeText(context, shortMessage, Toast.LENGTH_SHORT).show()
                 }
+            }
+
+            // Check auth state when the app starts
+            LaunchedEffect(Unit) {
+                authViewModel.checkAuthState()
             }
 
             FantasyStocksTheme {
@@ -135,60 +138,6 @@ object MainApp {
     const val route = "main_app"
 }
 
-// Define the ProfileScreen composable.
-@Composable
-fun ProfileScreen(
-    profile: Profile = Profile(),
-    onNavigateToFriendsList: () -> Unit = {},
-    onNavigateToChangePassword: () -> Unit = {},
-    onSignOut: () -> Unit = {}
-) {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            text = "Profile",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(bottom = 24.dp)
-        )
-
-        Text("Name: ${profile.name}")
-        Text("Email: ${profile.email}")
-
-        Button(onClick = onNavigateToChangePassword) {
-            Text("Change Password")
-        }
-
-        Button(onClick = onNavigateToFriendsList) {
-            Text("Friends List")
-        }
-
-        Button(
-            onClick = onSignOut,
-            modifier = Modifier.padding(top = 24.dp)
-        ) {
-            Text("Sign Out")
-        }
-    }
-}
-
-// Define the FriendsListScreen composable.
-@Composable
-fun FriendsListScreen(onNavigateToProfile: () -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text("Friends List")
-        Button(onClick = onNavigateToProfile) {
-            Text("Go to Profile")
-        }
-    }
-}
-
 // Define the MyApp composable, including the `NavController` and `NavHost`.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -202,7 +151,7 @@ fun MyApp(
         NavItem("Home", Icons.Default.Home, Home),
         NavItem("News", Icons.Default.Build, News),
         NavItem("Stocks", Icons.Default.Face, Stocks),
-        NavItem("Profile", Icons.Default.Person, Profile())
+        NavItem("Profile", Icons.Default.Person, ProfileDestination)
     )
     val baseRoutes = navItemList.map {item -> item.route.javaClass.toString().removePrefix("class ")}
 
@@ -276,6 +225,13 @@ fun MyApp(
             //homeDestination(goToPortfolioViewer = {session_name -> navController.navigate(Portfolio(session_name))})
             homeDestination(goToLeagueScreen = {leagueJson -> navController.navigate(LeagueScreen(leagueJson))})
             newsDestination(navController)
+            profileDestination(
+                onNavigateToFriendsList = {
+                    navController.navigate(FriendsList)
+                },
+                onNavigateToChangePassword = onNavigateToChangePassword,
+                onSignOut = onSignOut
+            )
             stocksDestination(goToStockViewer = {stock -> navController.navigate(Stock(stock))})
             stockViewer()
             portfolioViewer(goToStockViewer = {stock -> navController.navigate(Stock(stock))})
@@ -300,13 +256,8 @@ fun MyApp(
             }
 
             composable<FriendsList> {
-                FriendsListScreen(
-                    onNavigateToProfile = {
-                        navController.navigate(Profile())
-                    }
-                )
+                FriendsListScreen()
             }
-
         }
     }
 }
