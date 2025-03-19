@@ -29,6 +29,12 @@ class AuthViewModel : ViewModel() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    private val _isUsernameCheckLoading = MutableStateFlow(false)
+    val isUsernameCheckLoading: StateFlow<Boolean> = _isUsernameCheckLoading.asStateFlow()
+
+    private val _isUsernameAvailable = MutableStateFlow<Boolean?>(null)
+    val isUsernameAvailable: StateFlow<Boolean?> = _isUsernameAvailable.asStateFlow()
+
     init {
         checkAuthState()
     }
@@ -89,7 +95,29 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    fun signUpWithEmail(email: String, password: String) {
+    fun checkUsernameAvailability(username: String) {
+        viewModelScope.launch {
+            try {
+                _isUsernameCheckLoading.value = true
+                _errorMessage.value = null
+                
+                val isAvailable = SupabaseClient.isUsernameAvailable(username)
+                _isUsernameAvailable.value = isAvailable
+                
+                if (!isAvailable) {
+                    _errorMessage.value = "Username already taken"
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error checking username availability: ${e.message}", e)
+                _errorMessage.value = "Failed to check username availability"
+                _isUsernameAvailable.value = false
+            } finally {
+                _isUsernameCheckLoading.value = false
+            }
+        }
+    }
+
+    fun signUpWithEmail(email: String, password: String, username: String) {
         viewModelScope.launch {
             try {
                 _isLoading.value = true
@@ -103,10 +131,10 @@ class AuthViewModel : ViewModel() {
                     return@launch
                 }
 
-                Log.d(TAG, "Attempting to sign up with email: $email")
+                Log.d(TAG, "Attempting to sign up with email: $email and username: $username")
                 
                 try {
-                    SupabaseClient.signUpNewUser(email, password)
+                    SupabaseClient.signUpNewUser(email, password, username)
                     // Check auth state after sign up
                     delay(500) // Small delay to allow session to be established
                     checkAuthState()
@@ -128,6 +156,10 @@ class AuthViewModel : ViewModel() {
                 _errorMessage.value = "Sign up failed"
                 _isAuthenticated.value = false
                 _isLoading.value = false
+            } finally {
+                if (_isAuthenticated.value == true) {
+                    _isLoading.value = false
+                }
             }
         }
     }
@@ -138,22 +170,14 @@ class AuthViewModel : ViewModel() {
                 _isLoading.value = true
                 _errorMessage.value = null
                 Log.d(TAG, "Attempting to reset password for: $email")
-
-                try {
-                    SupabaseClient.resetPasswordForEmail(email)
-                    _isPasswordResetSent.value = true
-                    Log.d(TAG, "Password reset email sent to: $email")
-                    _isLoading.value = false
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to send reset link: ${e.message}", e)
-                    _errorMessage.value = "Failed to send reset link"
-                    _isPasswordResetSent.value = false
-                    _isLoading.value = false
-                }
+                
+                SupabaseClient.resetPasswordForEmail(email)
+                _isPasswordResetSent.value = true
+                Log.d(TAG, "Password reset email sent to: $email")
             } catch (e: Exception) {
-                Log.e(TAG, "Unexpected error during password reset: ${e.message}", e)
-                _errorMessage.value = "Failed to send reset link"
-                _isPasswordResetSent.value = false
+                Log.e(TAG, "Failed to send password reset: ${e.message}", e)
+                _errorMessage.value = "Failed to send password reset email"
+            } finally {
                 _isLoading.value = false
             }
         }
@@ -164,6 +188,13 @@ class AuthViewModel : ViewModel() {
             try {
                 _isLoading.value = true
                 _errorMessage.value = null
+                
+                if (newPassword.length < 6) {
+                    _errorMessage.value = "Password must be at least 6 characters long"
+                    _isLoading.value = false
+                    return@launch
+                }
+                
                 Log.d(TAG, "Attempting to change password")
 
                 try {
@@ -224,10 +255,12 @@ class AuthViewModel : ViewModel() {
 
     fun clearErrors() {
         _errorMessage.value = null
+        _isUsernameAvailable.value = null
     }
 
     fun resetState() {
         _isPasswordResetSent.value = false
         _isPasswordChanged.value = false
+        _isUsernameAvailable.value = null
     }
 }
