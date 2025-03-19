@@ -2,6 +2,9 @@ package com.example.fantasystocks.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -15,6 +18,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import com.example.fantasystocks.ui.viewmodels.AuthViewModel
+import kotlinx.coroutines.delay
 
 sealed class AuthScreen(val route: String) {
     object Login : AuthScreen("login")
@@ -184,12 +188,17 @@ fun SignupScreen(
     modifier: Modifier = Modifier
 ) {
     var email by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+    var usernameError by remember { mutableStateOf<String?>(null) }
+    var passwordError by remember { mutableStateOf<String?>(null) }
+    
     val isAuthenticated by authViewModel.isAuthenticated.collectAsState()
     val errorMessage by authViewModel.errorMessage.collectAsState()
     val isLoading by authViewModel.isLoading.collectAsState()
-    var passwordError by remember { mutableStateOf<String?>(null) }
+    val isUsernameCheckLoading by authViewModel.isUsernameCheckLoading.collectAsState()
+    val isUsernameAvailable by authViewModel.isUsernameAvailable.collectAsState()
 
     // Clear any previous errors when entering the screen
     LaunchedEffect(Unit) {
@@ -199,6 +208,33 @@ fun SignupScreen(
     LaunchedEffect(isAuthenticated) {
         if (isAuthenticated == true) {
             onSignupSuccess()
+        }
+    }
+
+    // When username changes, check for errors with debounce
+    LaunchedEffect(username) {
+        if (username.isNotEmpty()) {
+            if (username.length < 3) {
+                usernameError = "Username must be at least 3 characters long"
+            } else if (!username.matches(Regex("^[a-zA-Z0-9_]+$"))) {
+                usernameError = "Username can only contain letters, numbers, and underscores"
+            } else {
+                usernameError = null
+                // Add delay before checking availability
+                delay(500) // Wait 500ms after last keystroke
+                if (username.length >= 3 && username.matches(Regex("^[a-zA-Z0-9_]+$"))) {
+                    authViewModel.checkUsernameAvailability(username)
+                }
+            }
+        } else {
+            usernameError = null
+        }
+    }
+
+    // When we get a response about username availability
+    LaunchedEffect(isUsernameAvailable) {
+        if (isUsernameAvailable == false && username.isNotEmpty() && usernameError == null) {
+            usernameError = "Username already taken"
         }
     }
 
@@ -228,6 +264,55 @@ fun SignupScreen(
                 .fillMaxWidth()
                 .padding(vertical = 8.dp),
             enabled = !isLoading
+        )
+
+        OutlinedTextField(
+            value = username,
+            onValueChange = { username = it },
+            label = { Text("Username") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Next
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            enabled = !isLoading,
+            isError = usernameError != null,
+            trailingIcon = {
+                if (isUsernameCheckLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else if (username.isNotEmpty() && username.length >= 3 && username.matches(Regex("^[a-zA-Z0-9_]+$"))) {
+                    if (isUsernameAvailable == true) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = "Username available",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    } else if (isUsernameAvailable == false) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Username taken",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            },
+            supportingText = {
+                if (usernameError != null) {
+                    Text(usernameError!!, color = MaterialTheme.colorScheme.error)
+                } else if (username.isNotEmpty() && username.length >= 3 && username.matches(Regex("^[a-zA-Z0-9_]+$"))) {
+                    if (isUsernameAvailable == true) {
+                        Text("Username is available", color = MaterialTheme.colorScheme.primary)
+                    } else if (isUsernameAvailable == false) {
+                        Text("Username is already taken", color = MaterialTheme.colorScheme.error)
+                    }
+                }
+            }
         )
 
         OutlinedTextField(
@@ -269,28 +354,29 @@ fun SignupScreen(
                 .fillMaxWidth()
                 .padding(vertical = 8.dp),
             isError = passwordError != null,
-            enabled = !isLoading
+            enabled = !isLoading,
+            supportingText = {
+                if (passwordError != null) {
+                    Text(passwordError!!, color = MaterialTheme.colorScheme.error)
+                }
+            }
         )
-
-        passwordError?.let { error ->
-            Text(
-                text = error,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp)
-            )
-        }
 
         Button(
             onClick = {
-                if (password == confirmPassword) {
-                    authViewModel.signUpWithEmail(email, password)
+                if (password == confirmPassword && usernameError == null) {
+                    authViewModel.signUpWithEmail(email, password, username)
                 } else {
                     passwordError = "Passwords do not match"
                 }
             },
-            enabled = !isLoading && email.isNotBlank() && password.isNotBlank() && confirmPassword.isNotBlank() && passwordError == null,
+            enabled = !isLoading && 
+                     email.isNotBlank() && 
+                     username.isNotBlank() && 
+                     password.isNotBlank() && 
+                     confirmPassword.isNotBlank() && 
+                     passwordError == null && 
+                     usernameError == null,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 16.dp)
