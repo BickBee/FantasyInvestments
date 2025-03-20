@@ -52,6 +52,7 @@ fun FantasyStocksTheme(
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
+//    val colorScheme = CustomLightColorScheme
 
     MaterialTheme(
             colorScheme = colorScheme,
@@ -59,3 +60,37 @@ fun FantasyStocksTheme(
             content = content
     )
 }
+
+private val CustomLightColorScheme = lightColorScheme(
+    // Primary - deep navy blue for trust and stability
+    primary = Color(0xFF1A2C42),
+    onPrimary = Color(0xFFFFFFFF),
+    primaryContainer = Color(0xFFCFD8E2),
+    onPrimaryContainer = Color(0xFF0D1829),
+
+    // Secondary - teal for a modern financial feel
+    secondary = Color(0xFF26A69A),
+    onSecondary = Color(0xFF899BD2),
+    secondaryContainer = Color(0xFFB2DFDB),
+    onSecondaryContainer = Color(0xFF00403B),
+
+    // Tertiary - subtle gold for premium feel
+    tertiary = Color(0xFFD4AF37),
+    onTertiary = Color(0xFF000000),
+    tertiaryContainer = Color(0xFFFAF1D6),
+    onTertiaryContainer = Color(0xFF3D3000),
+
+    // Background colors - clean and minimal
+    background = Color(0xFFF9FAFC),
+    onBackground = Color(0xFF202124),
+    surface = Color(0xFFFFFFFF),
+    onSurface = Color(0xFF202124),
+    surfaceVariant = Color(0xFFEEF0F4),
+    onSurfaceVariant = Color(0xFF44474E),
+
+    // Error - traditional red for warnings/losses
+    error = Color(0xFFD84315),
+    onError = Color(0xFFFFFFFF),
+    errorContainer = Color(0xFFFFDBD0),
+    onErrorContainer = Color(0xFF3F0300)
+)
