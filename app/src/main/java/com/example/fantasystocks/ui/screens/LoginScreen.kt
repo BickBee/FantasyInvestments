@@ -1,5 +1,6 @@
 package com.example.fantasystocks.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -9,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -19,6 +21,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import com.example.fantasystocks.ui.viewmodels.AuthViewModel
 import kotlinx.coroutines.delay
+import com.example.fantasystocks.R
 
 sealed class AuthScreen(val route: String) {
     object Login : AuthScreen("login")
@@ -95,6 +98,13 @@ fun LoginScreen(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Image(
+            painter = painterResource(id = R.drawable.logo),
+            contentDescription = "Fantasy Investments Logo",
+            modifier = Modifier
+                .size(240.dp)
+        )
+
         Text(
             text = "Fantasy Investments",
             style = MaterialTheme.typography.headlineMedium,

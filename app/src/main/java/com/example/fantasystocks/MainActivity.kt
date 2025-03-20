@@ -5,7 +5,13 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Build
@@ -29,10 +35,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -147,6 +160,26 @@ fun MyApp(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
     val navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
+    // Create a remembered state to store the previous screen title
+    val previousScreenTitle = remember { mutableStateOf("Fantasy Investments") }
+
+    // Update the when statement
+    val currentScreenTitle = when(currentRoute) {
+        "com.example.fantasystocks.ui.screens.Home" -> "Home"
+        "com.example.fantasystocks.ui.News" -> "News"
+        "com.example.fantasystocks.ui.screens.Stocks" -> "Stocks"
+        "com.example.fantasystocks.ui.screens.ProfileDestination" -> "Profile"
+        else -> previousScreenTitle.value
+    }
+
+    // After determining the new title, update the remembered previous value
+    LaunchedEffect(currentScreenTitle) {
+        previousScreenTitle.value = currentScreenTitle
+    }
+
     val navItemList = listOf(
         NavItem("Home", Icons.Default.Home, Home),
         NavItem("News", Icons.Default.Build, News),
@@ -163,33 +196,60 @@ fun MyApp(
             val isBaseRoute = baseRoutes.contains(currentRoute)
 
             TopAppBar(
+                modifier = Modifier
+                    .height(90.dp),
                 title = {
-                    Text(
-                        text = "Fantasy Investments",
-                        style = MaterialTheme.typography.headlineMedium,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxHeight()
+                    ) {
+                        Text(
+                            text = currentScreenTitle,
+                            style = MaterialTheme.typography.headlineSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.5.sp
+                            ),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary
-                ),
                 navigationIcon = {
                     if (!isBaseRoute) {
-                        IconButton(
-                            onClick = { navController.popBackStack() },
-                            modifier = Modifier.padding(start = 8.dp)
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .padding(start = 8.dp)
                         ) {
-                            Icon(
-                                Icons.Default.ArrowBack,
-                                contentDescription = "Back",
-                                tint = MaterialTheme.colorScheme.onPrimary
-                            )
+                            IconButton(
+                                onClick = { navController.popBackStack() }
+                            ) {
+                                Icon(
+                                    Icons.Default.ArrowBack,
+                                    contentDescription = "Back",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
                         }
                     }
                 },
                 actions = {
-                    // Optional action buttons can be added here
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.fillMaxHeight()
+                    ) {
+                        IconButton(
+                            onClick = { /* Open notifications */ }
+                        ) {
+                            Icon(
+                                painterResource(id = R.drawable.notif),
+                                contentDescription = "Notifications",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
+                    }
                 }
             )
         },
