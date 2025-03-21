@@ -1,14 +1,32 @@
 package com.example.fantasystocks.classes
 
 import com.example.fantasystocks.ui.viewmodels.doubleStringToMoneyString
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.util.Locale
 
 @Serializable
+data class PlayerPortfolioView(
+    @SerialName("uid")
+    val id: String,
+    val username: String,
+    val cash: Double,
+    @SerialName("initial_value")
+    val initValue: Double,
+    @SerialName("stock_id")
+    val stockId: Int?,
+    val quantity: Double?,
+    @SerialName("stock_name")
+    val stockName: String?,
+    @SerialName("stock_ticker")
+    val stockTicker: String?
+)
+
+@Serializable
 data class Player (
     val name: String,
-    val id: Int,
-    val initValue: Double,
+    val id: String,
+    var initValue: Double,
     var cash: Double,
     val portfolio: MutableMap<Stock, Int> = mutableMapOf()
 ) {

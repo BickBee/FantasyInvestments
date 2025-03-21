@@ -22,6 +22,7 @@ import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
@@ -51,34 +52,38 @@ import java.util.Locale
 @Composable
 fun LeaderboardComposable(
     viewModel: LeagueViewModel,
-    leaderboard: Leaderboard
+    leaderboard: Leaderboard?
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-    ) {
-        val sortedPlayers = leaderboard.sort(Leaderboard.SortBy.VALUE)
-        val top3 = sortedPlayers.subList(0,3)
-        val rest = sortedPlayers.subList(3, sortedPlayers.size)
-        Box(
+    if (leaderboard == null) {
+        CircularProgressIndicator()
+    } else {
+        Column(
             modifier = Modifier
-                .weight(2f)
                 .fillMaxSize()
         ) {
-            TopLeaderboard(top3)
-        }
-        Card(
-            modifier = Modifier
-                .weight(3f)
-                .fillMaxSize(),
-            shape = RoundedCornerShape(
-                topStart = 32.dp,
-                topEnd = 32.dp,
-                bottomStart = 0.dp,
-                bottomEnd = 0.dp
-            )
-        ) {
-            BottomLeaderboard(rest)
+            val sortedPlayers = leaderboard.sort(Leaderboard.SortBy.VALUE)
+            val top3 = if (sortedPlayers.size >= 3) sortedPlayers.subList(0, 3) else sortedPlayers
+            val rest = if (sortedPlayers.size > 3) sortedPlayers.subList(3, sortedPlayers.size) else emptyList()
+            Box(
+                modifier = Modifier
+                    .weight(2f)
+                    .fillMaxSize()
+            ) {
+                TopLeaderboard(top3)
+            }
+            Card(
+                modifier = Modifier
+                    .weight(3f)
+                    .fillMaxSize(),
+                shape = RoundedCornerShape(
+                    topStart = 32.dp,
+                    topEnd = 32.dp,
+                    bottomStart = 0.dp,
+                    bottomEnd = 0.dp
+                )
+            ) {
+                BottomLeaderboard(rest)
+            }
         }
     }
 }
@@ -93,29 +98,35 @@ fun TopLeaderboard(
             .padding(16.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight(),
-            contentAlignment = Alignment.BottomCenter
-        ) {
-            TopItem(players[1], "🥈")
+        if (players.size >= 2) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight(),
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                TopItem(players[1], "🥈")
+            }
         }
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight(),
-            contentAlignment = Alignment.TopCenter
-        ) {
-            TopItem(players[0], "🥇")
+        if (players.size >= 1) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight(),
+                contentAlignment = Alignment.TopCenter
+            ) {
+                TopItem(players[0], "🥇")
+            }
         }
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight(),
-            contentAlignment = Alignment.BottomCenter
-        ) {
-            TopItem(players[2], "🥉")
+        if (players.size >= 3) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight(),
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                TopItem(players[2], "🥉")
+            }
         }
     }
 }
@@ -150,17 +161,26 @@ fun TopItem(
 fun BottomLeaderboard(
     players: List<Player> // [p4, p5, ...]
 ) {
-    LazyColumn(
-        modifier = Modifier
-            .padding(
-                start = 16.dp,
-                top = 20.dp,
-                end = 16.dp,
-                bottom = 16.dp)
-    ) {
-        itemsIndexed(players) { idx, player ->
-            LeaderboardItem(idx + 4, player)
+    if (players.isNotEmpty()) {
+        LazyColumn(
+            modifier = Modifier
+                .padding(
+                    start = 16.dp,
+                    top = 20.dp,
+                    end = 16.dp,
+                    bottom = 16.dp
+                )
+        ) {
+            itemsIndexed(players) { idx, player ->
+                LeaderboardItem(idx + 4, player)
+            }
         }
+    } else {
+        Text(
+            text = "Add More Players For A Better Experience",
+            modifier = Modifier.padding(32.dp),
+            style = MaterialTheme.typography.titleLarge
+        )
     }
 }
 

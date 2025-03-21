@@ -369,7 +369,7 @@ fun FriendsListScreen(
                 showAddFriendDialog = false
             }
         )
-    }
+}
     
     Column(
         modifier = Modifier

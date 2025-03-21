@@ -102,3 +102,41 @@ CREATE TRIGGER update_user_friends_timestamp
 BEFORE UPDATE ON user_friends
 FOR EACH ROW
 EXECUTE FUNCTION update_timestamp();
+
+-- View for player portfolios
+CREATE VIEW player_portfolio_view AS
+SELECT
+    ul.uid,
+    ul.league_id,
+    ui.username,
+    ul.cash,
+    ul.initial_value,
+    p.stock_id,
+    p.quantity,
+    s.name AS stock_name,
+    s.ticker AS stock_ticker
+FROM
+    user_league ul
+JOIN
+    user_information ui ON ul.uid = ui.uid
+LEFT JOIN
+    portfolio p ON ul.uid = p.uid AND ul.league_id = p.league_id
+LEFT JOIN
+    stock s ON p.stock_id = s.stock_id;
+
+-- View for transactions
+CREATE VIEW transaction_view AS
+SELECT
+    txn_id,
+    uid,
+    league_id,
+    s.stock_id,
+    s.name stock_name,
+    action,
+    quantity,
+    price,
+    timestamp
+FROM
+    transactions t
+JOIN
+    stock s ON t.stock_id = s.stock_id;
