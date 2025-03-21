@@ -8,14 +8,14 @@ import java.util.Calendar
 class LeaderboardTest {
     @Test
     fun testSort() {
-        val stock1 = Stock("Apple", "APPL", 235.26)
-        val stock2 = Stock("Boeing", "BA", 30.82)
-        val stock3 = Stock("General Motors", "GM", 400.41)
-        val player1 = Player("Bob", 103, 1000.0, 100.0,
+        val stock1 = Stock(1, "Apple", "APPL", 235.26)
+        val stock2 = Stock(2,"Boeing", "BA", 30.82)
+        val stock3 = Stock(3, "General Motors", "GM", 400.41)
+        val player1 = Player("Bob", "103", 1000.0, 100.0,
             mutableMapOf(Pair(stock1, 1)))
-        val player2 = Player("Alice", 104, 1000.0, 100.0,
+        val player2 = Player("Alice", "104", 1000.0, 100.0,
             mutableMapOf(Pair(stock2, 1)))
-        val player3 = Player("Charlie", 105, 1000.0, 100.0,
+        val player3 = Player("Charlie", "105", 1000.0, 100.0,
             mutableMapOf(Pair(stock3, 1)))
         val start = LocalDate(2025, 1, 21)
         val league = League(101, "Test",  start, null)

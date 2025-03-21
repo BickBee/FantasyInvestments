@@ -36,6 +36,10 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.Serializable
 import java.text.SimpleDateFormat
 import java.util.Calendar
+import com.example.fantasystocks.ui.components.StockGraph
+import android.util.Log
+import com.example.fantasystocks.database.StockDetails
+import com.example.fantasystocks.database.StockRouter
 import java.util.Locale
 
 @Serializable
@@ -103,17 +107,18 @@ private fun WatchlistTab(goToStockViewer: (String) -> Unit) {
 
 @Composable
 private fun StocksTab(goToStockViewer: (String) -> Unit) {
-    val stocks = listOf("AAPL" to "Apple", "MSFT" to "Microsoft", "NVDA" to "Nvidia")
-    val stockDataMap = remember { mutableStateOf<Map<String, List<Double>>>(emptyMap()) }
+    var stockDetails by remember { mutableStateOf<List<StockDetails>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
-        val today = getCurrentDate()
-        val weekAgo = getDateMinusDays(7)
-        
-        val stockPrices = fetchStockPricesWithHistory(stocks, weekAgo, today)
-        stockDataMap.value = stockPrices
-        isLoading = false
+        try {
+            stockDetails = StockRouter.getAvailableStocks()
+        } catch (e: Exception) {
+            // Handle error case
+            Log.e("StocksTab", "Error fetching stocks", e)
+        } finally {
+            isLoading = false
+        }
     }
 
     if (isLoading) {
@@ -126,49 +131,12 @@ private fun StocksTab(goToStockViewer: (String) -> Unit) {
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            if (stockDataMap.value.isEmpty()) {
+            if (stockDetails.isEmpty()) {
                 item { Text("No stock data available", modifier = Modifier.padding(16.dp)) }
             } else {
-                items(stocks.size) { index ->
-                    val (ticker, name) = stocks[index]
-                    val prices = stockDataMap.value[ticker] ?: emptyList()
-                    val currentPrice = prices.lastOrNull()?.let { 
-                        String.format(Locale.US, "%.2f", it) 
-                    } ?: "N/A"
-                    
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .padding(16.dp)
-                                .fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column {
-                                    Text(text = name, style = MaterialTheme.typography.titleMedium)
-                                    Text(text = ticker, style = MaterialTheme.typography.bodyMedium)
-                                }
-                                Text(text = "$$currentPrice", style = MaterialTheme.typography.titleMedium)
-                            }
-                            
-                            if (prices.isNotEmpty()) {
-                                StockGraph(
-                                    stockData = prices,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(150.dp)
-                                        .padding(top = 16.dp)
-                                )
-                            }
-                        }
-                    }
+                items(stockDetails.size) { index ->
+                    val stock = stockDetails[index]
+                    StockItem(Triple(stock.ticker, stock.ticker, stock.latestPrice.toString()), goToStockViewer)
                 }
             }
         }

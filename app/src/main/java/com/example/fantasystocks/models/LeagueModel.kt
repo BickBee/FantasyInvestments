@@ -8,6 +8,7 @@ import com.example.fantasystocks.classes.Transaction
 import com.example.fantasystocks.classes.UserLeague
 import com.example.fantasystocks.database.SupabaseClient
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -198,6 +199,7 @@ class LeagueModel() {
                         eq("uid", uid)
                         eq("league_id", leagueId)
                     }
+                    order(column = "timestamp", order = Order.DESCENDING)
                 }
                 .decodeList<Transaction>()
         } catch (e: Exception) {

@@ -6,11 +6,11 @@ import org.junit.Assert.*
 class PlayerTest {
     @Test
     fun testGetTotalValue() {
-        val stock1 = Stock("Apple", "AAPL", 135.10)
-        val stock2 = Stock("Google", "GOOG", 210.87)
+        val stock1 = Stock(1, "Apple", "AAPL", 135.10)
+        val stock2 = Stock(2, "Google", "GOOG", 210.87)
         val player = Player(
             "Alice",
-            103,
+            "103",
             1000.0,
             115.0,
             mutableMapOf(Pair(stock1, 3), Pair(stock2, 2))
@@ -20,10 +20,10 @@ class PlayerTest {
 
     @Test
     fun testTotalReturn() {
-        val stock1 = Stock("Microsoft", "MSFT", 58.92)
+        val stock1 = Stock(1, "Microsoft", "MSFT", 58.92)
         val player = Player(
             "Bob",
-            118,
+            "118",
             1000.0,
             400.57,
             mutableMapOf(Pair(stock1, 5))
@@ -33,12 +33,12 @@ class PlayerTest {
 
     @Test
     fun testGetPortfolio() {
-        val stock1 = Stock("Tesla", "TSLA", 332.16)
-        val stock2 = Stock("NVIDIA", "NVDA", 130.59)
-        val stock3 = Stock("Google", "GOOG", 102.42)
+        val stock1 = Stock(1, "Tesla", "TSLA", 332.16)
+        val stock2 = Stock(2, "NVIDIA", "NVDA", 130.59)
+        val stock3 = Stock(3, "Google", "GOOG", 102.42)
         val player = Player(
             "Charlie",
-            129,
+            "129",
             10000.0,
             2500.0,
             mutableMapOf(Pair(stock1, 2), Pair(stock2, 5), Pair(stock3, 10))
@@ -59,13 +59,13 @@ class PlayerTest {
 
     @Test
     fun testAssetAllocation() {
-        val stock1 = Stock("Apple", "APPL", 235.26)
-        val stock2 = Stock("Boeing", "BA", 30.82)
-        val stock3 = Stock("General Motors", "GM", 400.41)
-        val stock4 = Stock("NVIDIA", "NVDA", 130.59)
+        val stock1 = Stock(1, "Apple", "APPL", 235.26)
+        val stock2 = Stock(2, "Boeing", "BA", 30.82)
+        val stock3 = Stock(3,"General Motors", "GM", 400.41)
+        val stock4 = Stock(4, "NVIDIA", "NVDA", 130.59)
         val player = Player(
             "Dave",
-            1192,
+            "1192",
             5000.0,
             1187.13,
             mutableMapOf(Pair(stock1, 2), Pair(stock2, 15), Pair(stock3, 2), Pair(stock4, 5))
