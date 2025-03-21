@@ -34,6 +34,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.toJavaInstant
 import kotlinx.datetime.toLocalDateTime
+import kotlinx.serialization.Serializable
 import java.sql.Time
 import java.text.SimpleDateFormat
 import java.time.ZoneOffset
@@ -296,6 +297,13 @@ class HomeViewModel: ViewModel() {
     // --------------- Create League ---------------
     private val _leagueCreationResult = MutableStateFlow<Int?>(null)
     val leagueCreationResult = _leagueCreationResult.asStateFlow()
+
+    @Serializable
+    data class LeagueCreationDTO(
+        val name: String,
+        val startDate: LocalDate? = null,
+        val endDate: LocalDate? = null,
+    )
 
     fun createLeague() {
         viewModelScope.launch {

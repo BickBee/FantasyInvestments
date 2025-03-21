@@ -33,7 +33,7 @@ data class Player (
     fun getTotalValue(): Double {
         var sum = 0.0
         portfolio.forEach { (stock, num) -> sum += stock.price * num }
-        return sum + cash
+        return initValue // FIXME: this is hardcoded
     }
 
     fun totalReturn(): Double = (getTotalValue() - initValue) / initValue

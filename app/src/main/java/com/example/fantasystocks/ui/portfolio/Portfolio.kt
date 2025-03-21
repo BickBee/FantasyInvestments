@@ -31,7 +31,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -40,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import com.example.fantasystocks.classes.League
 import com.example.fantasystocks.classes.Player
 import com.example.fantasystocks.database.SupabaseClient
+import com.example.fantasystocks.database.StockRouter
 import com.example.fantasystocks.ui.components.StockGraph
 import com.example.fantasystocks.ui.viewmodels.LeagueViewModel
 import com.example.fantasystocks.ui.viewmodels.doubleMoneyToString
@@ -151,12 +154,20 @@ fun PortfolioComposable(
     player: Player,
     goToStockViewer: (String) -> Unit
 ) {
+    var stockPrices by remember { mutableStateOf<Map<Int, Double>>(emptyMap()) }
+    
+    LaunchedEffect(player) {
+        val stockIds = player.portfolio.keys.map { it.id }
+        stockPrices = StockRouter.getStockPriceMap(stockIds)
+    }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
         items(player.getPortfolio(sortBy = Player.SortBy.VALUE)) { stockPair ->
+            val currentPrice = stockPrices[stockPair.first.id] ?: 1.0
             Card(
                 modifier = Modifier
                     .padding(bottom = 8.dp)
@@ -174,7 +185,7 @@ fun PortfolioComposable(
                         fontWeight = FontWeight.SemiBold,
                         style = MaterialTheme.typography.bodyLarge)
                     Text(
-                        text = doubleMoneyToString(stockPair.first.price * stockPair.second),
+                        text = doubleMoneyToString(currentPrice * stockPair.second),
                         fontWeight = FontWeight.SemiBold,
                         style = MaterialTheme.typography.bodyLarge
                     )
@@ -185,14 +196,26 @@ fun PortfolioComposable(
                         .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stockPair.first.ticker,
+                            fontWeight = FontWeight.Light,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = " • ${stockPair.second} shares",
+                            fontWeight = FontWeight.Light,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
                     Text(
-                        text = stockPair.first.ticker,
+                        text = "+2.99%", // TODO: Calculate actual percentage change
                         fontWeight = FontWeight.Light,
-                        style = MaterialTheme.typography.bodyMedium)
-                    Text(
-                        text = "+2.98%",
-                        fontWeight = FontWeight.Light,
-                        style = MaterialTheme.typography.bodyMedium)
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                 }
             }
         }

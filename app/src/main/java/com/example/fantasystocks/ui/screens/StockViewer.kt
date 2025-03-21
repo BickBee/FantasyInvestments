@@ -1,9 +1,7 @@
 package com.example.fantasystocks.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,52 +10,54 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import com.example.fantasystocks.ui.components.StockGraph
+import com.example.fantasystocks.ui.theme.InvalidRed
+import com.example.fantasystocks.ui.viewmodels.NO_SESSION_SELECTED
+import com.example.fantasystocks.ui.viewmodels.StockViewerViewModel
 
 fun NavGraphBuilder.stockViewer() {
     composable<Stock> { backStackEntry ->
         val stock = backStackEntry.arguments?.getString("stock") ?: "Unknown"
-        StockViewer(stock)
+        StockViewer(stock, StockViewerViewModel(stock))
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StockViewer(stock: String) {
-    var selectedSession by remember { mutableStateOf("Session 1") }
-    var quantity by remember { mutableStateOf("1") }
-    val sessions = listOf("Session 1", "Session 2", "Session 3")
-    var expanded by remember { mutableStateOf(false) }
+fun StockViewer(stockTicker: String, viewModel: StockViewerViewModel) {
+    val state by viewModel.state.collectAsState()
 
-    val dummyBalance = 10000.0
-    val stockData = listOf(100.0, 105.0, 102.0, 108.0, 110.0, 107.0, 112.0)
+    LaunchedEffect(Unit) {
+        viewModel.getLeagues()
+    }
+
+    LaunchedEffect(state.selectedSession) {
+        // update displayed balance
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -65,7 +65,7 @@ fun StockViewer(stock: String) {
     ) {
         // Stock Header
         Text(
-            text = stock,
+            text = stockTicker,
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(bottom = 8.dp)
         )
@@ -77,19 +77,20 @@ fun StockViewer(stock: String) {
                 .padding(bottom = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            StockStat("Low", "$98.50")
-            StockStat("High", "$112.30")
-            StockStat("P/E", "25.3")
-            StockStat("Volume", "1.2M")
+            StockStat("Price", state.latestPrice.toString())
+            StockStat("Low", state.stockLow.toString())
+            StockStat("High", state.stockHigh.toString())
+            StockStat("Open", state.stockOpen.toString())
+            StockStat("Close", state.stockClose.toString())
         }
 
         // Stock Graph
-        StockGraph(
-            stockData = stockData,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(250.dp)
-        )
+//        StockGraph(
+//            stockData = state.stockData,
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .height(250.dp)
+//        )
 
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -106,35 +107,31 @@ fun StockViewer(stock: String) {
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
 
-
                 ExposedDropdownMenuBox(
-                    expanded = expanded,
-                    onExpandedChange = { expanded = it }
+                    expanded = state.isSessionDropdownExpanded,
+                    onExpandedChange = { viewModel.updateSessionDropdownExpanded(it) }
                 ) {
                     OutlinedTextField(
-                        value = selectedSession,
-                        onValueChange = { selectedSession = it },
+                        value = state.selectedSession,
+                        onValueChange = {  },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .menuAnchor(),
+                            .menuAnchor().clickable { viewModel.updateSessionDropdownExpanded(!state.isSessionDropdownExpanded) },
                         readOnly = true,
                         label = { Text("Session name") },
                         trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = state.isSessionDropdownExpanded)
                         },
                     )
 
                     ExposedDropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
+                        expanded = state.isSessionDropdownExpanded,
+                        onDismissRequest = { viewModel.updateSessionDropdownExpanded(false) }
                     ) {
-                        sessions.forEach { session ->
+                        state.sessions.forEach { session ->
                             DropdownMenuItem(
-                                text = { Text(session) },
-                                onClick = {
-                                    selectedSession = session
-                                    expanded = false
-                                },
+                                text = { Text(session.name) },
+                                onClick = { viewModel.updateSelectedSession(session) },
                                 modifier = Modifier.fillMaxWidth(),
                             )
                         }
@@ -142,9 +139,19 @@ fun StockViewer(stock: String) {
                 }
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Balance
+                val balanceText = if (state.selectedSession == NO_SESSION_SELECTED) {
+                    "N/A" // or any default text/value you want to show when no session is selected
+                } else {
+                    String.format("$%.2f", state.balance)
+                }
+
                 Text(
-                    "Balance: $${String.format("%.2f", dummyBalance)}",
+                    text = "Balance: $balanceText",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+
+                Text(
+                    text = "Stock Owned: ${String.format("%.2f", state.stockBalance)}",
                     style = MaterialTheme.typography.bodyLarge
                 )
 
@@ -152,8 +159,8 @@ fun StockViewer(stock: String) {
 
                 // Quantity Input
                 TextField(
-                    value = quantity,
-                    onValueChange = { if (it.all { char -> char.isDigit() }) quantity = it },
+                    value = state.quantity,
+                    onValueChange = { viewModel.updateQuantity(it) },
                     label = { Text("Quantity") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth()
@@ -167,18 +174,28 @@ fun StockViewer(stock: String) {
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Button(
-                        onClick = { /* Handle buy */ },
+                        onClick = { viewModel.createTransaction(true) },
                         modifier = Modifier.weight(1f)
                     ) {
                         Text("Buy")
                     }
                     Button(
-                        onClick = { /* Handle sell */ },
-                        modifier = Modifier.weight(1f)
+                        onClick = { viewModel.createTransaction(false) },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.elevatedButtonColors(containerColor = InvalidRed, contentColor = Color.White)
                     ) {
                         Text("Sell")
                     }
                 }
+            }
+        }
+        state.message?.let { message ->
+            Snackbar(
+                modifier = Modifier.padding(16.dp),
+                action = {
+                }
+            ) {
+                Text(message)
             }
         }
     }

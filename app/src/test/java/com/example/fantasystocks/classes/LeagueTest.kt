@@ -8,7 +8,7 @@ class LeagueTest {
     @Test
     fun testAddPlayer() {
         val league = League(name = "Test")
-        val player = Player("Alice", 103, 1000.0, 115.0, mutableMapOf())
+        val player = Player("Alice", "103", 1000.0, 115.0, mutableMapOf())
         league.addPlayer(player)
         assertEquals(listOf(player), league.getPlayers())
     }
@@ -16,7 +16,7 @@ class LeagueTest {
     @Test
     fun testRemovePlayer() {
         val league = League(name = "Test")
-        val player = Player("Alice", 103, 1000.0, 115.0, mutableMapOf())
+        val player = Player("Alice", "103", 1000.0, 115.0, mutableMapOf())
         league.addPlayer(player)
         league.removePlayer(player)
         assertEquals(listOf<Player>(), league.getPlayers())
@@ -25,8 +25,8 @@ class LeagueTest {
     @Test
     fun testModifyBalance() {
         val league = League(name = "Test")
-        val player = Player("Alice", 103, 1000.0, 115.0, mutableMapOf())
-        val player2 = Player("Alice", 104, 1000.0, 115.0, mutableMapOf())
+        val player = Player("Alice", "103", 1000.0, 115.0, mutableMapOf())
+        val player2 = Player("Alice", "104", 1000.0, 115.0, mutableMapOf())
         league.addPlayer(player)
         assertEquals(true, league.modifyBalance(player, 100.0))
         assertEquals(100.0, player.cash, 0.01)
