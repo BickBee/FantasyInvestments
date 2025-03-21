@@ -59,6 +59,7 @@ import com.example.fantasystocks.ui.screens.Home
 import com.example.fantasystocks.ui.screens.ProfileDestination
 import com.example.fantasystocks.ui.screens.ProfileScreen
 import com.example.fantasystocks.ui.screens.LeagueScreen
+import com.example.fantasystocks.ui.screens.LeagueSettings
 import com.example.fantasystocks.ui.screens.Stocks
 import com.example.fantasystocks.ui.screens.authScreens
 import com.example.fantasystocks.ui.screens.homeDestination
@@ -70,6 +71,7 @@ import kotlinx.serialization.Serializable
 import com.example.fantasystocks.ui.screens.stockViewer
 import com.example.fantasystocks.ui.screens.Stock
 import com.example.fantasystocks.ui.screens.leagueScreenViewer
+import com.example.fantasystocks.ui.screens.leagueSettingsViewer
 import com.example.fantasystocks.ui.screens.portfolioViewer
 import kotlinx.serialization.json.Json
 
@@ -283,7 +285,7 @@ fun MyApp(
             modifier = Modifier.padding(innerPadding)
         ) {
             //homeDestination(goToPortfolioViewer = {session_name -> navController.navigate(Portfolio(session_name))})
-            homeDestination(goToLeagueScreen = {leagueJson -> navController.navigate(LeagueScreen(leagueJson))})
+            homeDestination(goToLeagueScreen = {leagueId -> navController.navigate(LeagueScreen(leagueId))})
             newsDestination(navController)
             profileDestination(
                 onNavigateToFriendsList = {
@@ -295,7 +297,11 @@ fun MyApp(
             stocksDestination(goToStockViewer = {stock -> navController.navigate(Stock(stock))})
             stockViewer()
             portfolioViewer(goToStockViewer = {stock -> navController.navigate(Stock(stock))})
-            leagueScreenViewer(goToStockViewer = {stock -> navController.navigate(Stock(stock))})
+            leagueScreenViewer(
+                goToStockViewer = {stock -> navController.navigate(Stock(stock))},
+                goToLeagueSettingsViewer = {leagueJson -> navController.navigate(LeagueSettings(leagueJson)) }
+            )
+            leagueSettingsViewer(goToHomeScreen = { navController.navigate(Home) { /* TODO pop back stack? */ } })
             // TODO: For some reason the nav bar gets greyed out when navigating to news article
 //            composable(
 //                route = "news_article?articlePrimaryKey={article.primaryKey}",

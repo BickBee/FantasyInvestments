@@ -120,6 +120,8 @@ object SupabaseClient {
 
     fun getCurrentUser() = supabase.auth.currentSessionOrNull()?.user
 
+    fun getCurrentUID() = getCurrentUser()?.id
+
     suspend fun getUsername(uid: String): String? {
         return withContext(Dispatchers.IO) {
             try {

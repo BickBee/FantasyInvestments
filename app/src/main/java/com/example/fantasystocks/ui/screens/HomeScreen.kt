@@ -31,26 +31,26 @@ fun NavGraphBuilder.homeDestination(goToPortfolioViewer: (String) -> Unit) {
 }
  */
 
-fun NavGraphBuilder.homeDestination(goToLeagueScreen: (String) -> Unit) {
+fun NavGraphBuilder.homeDestination(goToLeagueScreen: (Int) -> Unit) {
     composable<Home> { HomeScreen(goToLeagueScreen) }
 }
 
 @Composable
 fun HomeScreen(
     //goToPortfolioViewer: (String) -> Unit,
-    goToLeagueScreen: (String) -> Unit
+    goToLeagueScreen: (Int) -> Unit
 ) {
     val viewModel: HomeViewModel = viewModel<HomeViewModel>()
     val leagueCreationResult by viewModel.leagueCreationResult.collectAsState()
     val leagues by viewModel.leagues.collectAsState()
 
     LaunchedEffect(Unit) {
-        viewModel.getLeagues()
+        viewModel.getUsersLeagues()
     }
 
     LaunchedEffect(leagueCreationResult) {
-        leagueCreationResult?.let { league ->
-            goToLeagueScreen(Json.encodeToString(league))
+        leagueCreationResult?.let { leagueId ->
+            goToLeagueScreen(leagueId)
             viewModel.resetLeagueCreationResult()
         }
     }
@@ -125,7 +125,7 @@ fun HomeScreen(
 private fun SessionItem(
     league: League,
     subtitle: String,
-    goToLeagueScreen: (String) -> Unit
+    goToLeagueScreen: (Int) -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -136,7 +136,14 @@ private fun SessionItem(
             modifier = Modifier
                 .padding(16.dp)
                 .fillMaxWidth()
-                .clickable { goToLeagueScreen(Json.encodeToString(league)) },
+                .clickable {
+                    try {
+                        val leagueId = requireNotNull(league.id) { "CAN NOT CLICK, LEAGUE ID NULL" }
+                        goToLeagueScreen(leagueId)
+                    } catch (e: Exception) {
+                        println(e)
+                    }
+                },
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column {

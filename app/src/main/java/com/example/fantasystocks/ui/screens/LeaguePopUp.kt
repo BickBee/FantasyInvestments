@@ -2,8 +2,8 @@ package com.example.fantasystocks.ui.screens
 
 import android.os.Build
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
@@ -19,14 +19,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,7 +41,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
@@ -57,6 +59,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SelectableDates
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.collectAsState
@@ -66,8 +69,13 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import com.example.fantasystocks.classes.Player
+import com.example.fantasystocks.database.SupabaseClient
+import com.example.fantasystocks.models.UserInformation
 import com.example.fantasystocks.ui.theme.InvalidRed
+import com.example.fantasystocks.ui.viewmodels.cashToString
 import com.example.fantasystocks.ui.viewmodels.convertMillisToDate
+import com.example.fantasystocks.ui.viewmodels.doubleStringToMoneyString
 import com.example.fantasystocks.ui.viewmodels.localToUTC
 import java.time.ZoneOffset
 
@@ -94,7 +102,7 @@ fun LeagueDialog(
                 modifier = Modifier
                     .padding(20.dp, 40.dp)
                     .fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
                     text = "Create A New League",
@@ -139,7 +147,7 @@ fun LeagueDialog(
                     if (viewModel.useCashForAll) {
                         Spacer(modifier = Modifier.width(16.dp))
                         OutlinedTextField(
-                            value = viewModel.cashToString(),
+                            value = cashToString(viewModel.cashForAll),
                             onValueChange = {
                                 viewModel.updateCashForAll(it)
                             },
@@ -155,7 +163,7 @@ fun LeagueDialog(
                     }
                 }
                 HorizontalDivider(thickness = 2.dp)
-                AddPlayersSection(viewModel) // composable under
+                AddPlayersSection(viewModel)
                 HorizontalDivider(thickness = 2.dp)
                 Row(
                     modifier = Modifier
@@ -185,12 +193,30 @@ fun LeagueDialog(
             }
         }
     }
+    if (viewModel.isCashOpen) {
+        UpdateCash(
+            onDismiss = { viewModel.closeCash() },
+            onConfirm = {
+                viewModel.updateSingleCash()
+                viewModel.closeCash()
+            },
+            title = "Change ${viewModel.cashIsOpenFor}'s starting cash",
+            value = cashToString(viewModel.singleCash),
+            onValueChange = { viewModel.updateSingleCash(it) }
+        )
+    }
 }
 
 @Composable
 fun AddPlayersSection(
     viewModel: HomeViewModel
 ) {
+    var username by remember { mutableStateOf("") }
+
+    val isLoading by viewModel.userSearchLoading.collectAsState()
+    val searchResults by viewModel.searchResults.collectAsState()
+    val players by viewModel.players.collectAsState()
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -198,7 +224,8 @@ fun AddPlayersSection(
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -207,117 +234,234 @@ fun AddPlayersSection(
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 20.sp
             )
-            IconButton(
-                modifier = Modifier
-                    .size(22.dp)
-                    .clip(CircleShape),
-                onClick = { /*viewModel.openPlayerField()*/ },
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = "Add Player",
-                    tint = Color.DarkGray
-                )
-            }
-        }
-        viewModel.players.forEach {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(0.dp, 8.dp, 0.dp, 0.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(color = MaterialTheme.colorScheme.background),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(it.name,
-                    modifier = Modifier
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                )
+            if (viewModel.addPlayerField) {
                 IconButton(
                     modifier = Modifier
                         .size(22.dp)
-                        .padding(2.dp),
-                    onClick = { viewModel.removePlayer(it) }) {
+                        .clip(CircleShape),
+                    onClick = { viewModel.closePlayerField() },
+                ) {
                     Icon(
-                        imageVector = Icons.Filled.Delete,
-                        contentDescription = "Remove",
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = "Close Add Player",
+                        tint = Color.DarkGray
+                    )
+                }
+            } else {
+                IconButton(
+                    modifier = Modifier
+                        .size(22.dp)
+                        .clip(CircleShape),
+                    onClick = { viewModel.openPlayerField() },
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = "Add Player",
+                        tint = Color.DarkGray
                     )
                 }
             }
         }
+        Spacer(modifier = Modifier.height(8.dp))
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            itemsIndexed(players) { idx, player ->
+                fun onCashClick() {
+                    viewModel.openCash()
+                    viewModel.updateCashIsOpenFor(player.name)
+                    viewModel.updateSingleCash(player.cash.toInt())
+                }
+                if (idx == players.lastIndex) {
+                    SelectedPlayerCard(player, viewModel, 16, { onCashClick() })
+                } else {
+                    SelectedPlayerCard(player, viewModel, onCashClick =  { onCashClick() })
+                }
+            }
+        }
         if (viewModel.addPlayerField) {
-            /*
-            TextField(
-                value = viewModel.playerName,
-                onValueChange = { viewModel.updatePlayerName(it) },
+            OutlinedTextField(
+                value = username,
+                onValueChange = {
+                    username = it
+                    if (username.isNotEmpty()) {
+                        viewModel.searchUsers(it)
+                    } else {
+                        viewModel.clearSearch()
+                    }
+                },
                 shape = RoundedCornerShape(25.dp),
-                label = { Text("Player Name") },
-                maxLines = 1,
-                trailingIcon = {
-                    Row (
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        // Confirm icon (Checkmark)
-                        IconButton(
-                            modifier = Modifier
-                                .size(22.dp),
-                            onClick = { viewModel.addPlayer() }) {
-                            Icon(imageVector = Icons.Filled.Check, contentDescription = "Confirm")
+                label = { Text("Search by username") },
+                singleLine = true,
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            if (isLoading) {
+                CircularProgressIndicator()
+            } else if (searchResults.isNotEmpty()) {
+                Text(
+                    text = "Search Results",
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                ) {
+                    itemsIndexed(searchResults) { idx, result ->
+                        fun onClick() {
+                            username = ""
+                            viewModel.addPlayerToLeague(result)
+                            viewModel.clearSearch()
                         }
-                        // Delete icon (Trash)
-                        IconButton(
-                            modifier = Modifier
-                                .size(22.dp),
-                            onClick = { viewModel.deletePlayerName() }) {
-                            Icon(imageVector = Icons.Filled.Delete, contentDescription = "Delete")
+                        if (idx == searchResults.lastIndex) {
+                            UserSearchCard(user = result, onClick = { onClick() }, padding = 4)
+                        } else {
+                            UserSearchCard(user = result, onClick = { onClick() },)
                         }
                     }
                 }
+            } else if (username.isNotEmpty()) {
+                Text("No users found")
+            }
+
+        }
+    }
+}
+
+@Composable
+fun UserSearchCard(
+    user: UserInformation,
+    onClick: () -> Unit,
+    padding: Int = 0,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(
+                top = 4.dp,
+                start = 4.dp,
+                end = 4.dp,
+                bottom = padding.dp
+            ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Icon(
+                imageVector = Icons.Default.AccountCircle,
+                contentDescription = "User",
             )
-             */
-            val searchText by viewModel.searchText.collectAsState()
-            val users by viewModel.users.collectAsState()
-            val isSearching by viewModel.isSearching.collectAsState()
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp)
-            ) {
-                TextField(
-                    value = searchText,
-                    onValueChange = viewModel::onPlayerSearch,
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text(text= "Search") }
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(user.username)
+        }
+    }
+}
+
+@Composable
+fun SelectedPlayerCard(
+    player: Player,
+    viewModel: HomeViewModel,
+    padding: Int = 0,
+    onCashClick: () -> Unit = {}
+) {
+    val isCurrent = SupabaseClient.getCurrentUID() == player.id
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                top = 4.dp,
+                start = 4.dp,
+                end = 4.dp,
+                bottom = padding.dp
+            ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = if (isCurrent)
+            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary)
+        else
+            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp, horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(modifier = Modifier.weight(1.9f)) {
+                Icon(
+                    imageVector = Icons.Default.AccountCircle,
+                    contentDescription = "User",
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                if (isSearching) {
-                    Box(
+                Spacer(modifier = Modifier.width(16.dp))
+                Text(player.name)
+            }
+            Box(modifier = Modifier.weight(1f)) {
+                if (!viewModel.useCashForAll) {
+                    Text(
+                        text = "$" + doubleStringToMoneyString(player.cash.toInt().toString()),
                         modifier = Modifier
-                            .fillMaxWidth()
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.align(Alignment.Center)
-                        )
-                    }
+                            .clickable { onCashClick() }
+                    )
+                }
+            }
+            Box(modifier = Modifier.weight(0.3f)) {
+                if (isCurrent) {
+                    Text("You", maxLines = 1)
                 } else {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
+                    IconButton(
+                        modifier = Modifier.size(22.dp),
+                        onClick = { viewModel.removePlayer(player) }
                     ) {
-                        items(users) { user ->
-                            Text(
-                                text = user.username,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 8.dp)
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Remove player"
+                        )
                     }
                 }
             }
         }
     }
+}
+
+@Composable
+fun UpdateCash(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+    title: String,
+    value: String,
+    onValueChange: (cash: String) -> Unit
+) {
+    EditDialog(
+        onDismissRequest = { onDismiss() },
+        onConfirmRequest = { onConfirm() },
+        title = title,
+        editFields = {
+            OutlinedTextField(
+                value = value,
+                onValueChange = { onValueChange(it) },
+                // only numbers keyboard comes up
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                maxLines = 1,
+                leadingIcon = { Text("$") },
+                label = { Text("Cash")},
+                textStyle = LocalTextStyle.current.copy(
+                    textAlign = TextAlign.End
+                ),
+                shape = RoundedCornerShape(25.dp),
+                modifier = Modifier.padding(horizontal = 4.dp)
+            )
+        },
+        isConfirmEnabled = { true }
+    )
 }
 
 
@@ -366,16 +510,16 @@ fun DatePickerFieldToModal(
             if (labelText == "Start") {
                 DatePickerModal(
                     dateState = viewModel.startDate,
-                    end = false,
                     onDateSelected = { viewModel.updateStartDate(it) },
-                    onDismiss = { showModal = false }
+                    onDismiss = { showModal = false },
+                    end = viewModel.endDate
                 )
             } else if (labelText == "End") {
                 DatePickerModal(
                     dateState = viewModel.endDate,
-                    end = true,
                     onDateSelected = { viewModel.updateEndDate(it) },
-                    onDismiss = { showModal = false }
+                    onDismiss = { showModal = false },
+                    start = viewModel.startDate
                 )
             }
         } else {
@@ -399,12 +543,19 @@ fun DatePickerFieldToModal(
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
-class FutureSelectableDates: SelectableDates {
+class FutureSelectableDates(private val start: Long?, private val end: Long?): SelectableDates {
     private val now = java.time.LocalDate.now()
     private val dayStart = now.atTime(0, 0, 0, 0).toEpochSecond(ZoneOffset.UTC) * 1000
 
     @ExperimentalMaterial3Api
     override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+        if (start != null && end != null) {
+            return utcTimeMillis > start && utcTimeMillis < end && utcTimeMillis >= dayStart
+        } else if (start != null) {
+            return utcTimeMillis > start && utcTimeMillis >= dayStart
+        } else if (end != null) {
+            return utcTimeMillis >= dayStart && utcTimeMillis < end
+        }
         return utcTimeMillis >= dayStart
     }
 
@@ -419,14 +570,15 @@ class FutureSelectableDates: SelectableDates {
 @Composable
 fun DatePickerModal(
     dateState: Long?,
-    end: Boolean,
     onDateSelected: (Long) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    start: Long? = null,
+    end: Long? = null,
 ) {
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = dateState,
         initialDisplayedMonthMillis = dateState,
-        selectableDates = FutureSelectableDates()
+        selectableDates = FutureSelectableDates(start, end)
     )
     Dialog(
         onDismissRequest = onDismiss,

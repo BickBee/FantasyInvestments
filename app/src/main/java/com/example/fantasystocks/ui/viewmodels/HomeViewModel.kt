@@ -6,20 +6,35 @@ import androidx.lifecycle.ViewModel
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fantasystocks.classes.League
+import com.example.fantasystocks.classes.Player
 import com.example.fantasystocks.classes.User
-import com.example.fantasystocks.models.HomeModel
+import com.example.fantasystocks.classes.UserLeague
+import com.example.fantasystocks.database.SupabaseClient
+import com.example.fantasystocks.models.LeagueModel
+import com.example.fantasystocks.models.UserInformation
+import com.example.fantasystocks.models.UserLeagueModel
+import com.example.fantasystocks.models.UserModel
+import io.github.jan.supabase.auth.user.UserInfo
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.toJavaInstant
 import kotlinx.datetime.toLocalDateTime
+import java.sql.Time
 import java.text.SimpleDateFormat
 import java.time.ZoneOffset
 import java.util.Locale
@@ -57,6 +72,10 @@ fun longToLocalDate(millis: Long?): LocalDate? {
     }
 }
 
+fun localDateToLong(date: LocalDate?): Long? {
+    return date?.atStartOfDayIn(TimeZone.currentSystemDefault())?.toJavaInstant()?.toEpochMilli()
+}
+
 fun doubleStringToMoneyString(num: String): String {
     val length = num.length
     val result = StringBuilder()
@@ -71,9 +90,25 @@ fun doubleStringToMoneyString(num: String): String {
     return result.reverse().toString()
 }
 
+fun stringCashToInt(cash: String): Int {
+    val withoutCommas = cash.replace(",", "")
+    val value = withoutCommas.toInt()
+    return when {
+        (value < 0) -> 0
+        (value > 99999999) -> 99999999
+        else -> value
+    }
+}
+
+fun cashToString(cash: Int): String {
+    return doubleStringToMoneyString(cash.toString())
+}
+
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 class HomeViewModel: ViewModel() {
-    private val homeModel = HomeModel()
+    private val userLeagueModel = UserLeagueModel()
+    private val leagueModel = LeagueModel()
+    private val userModel = UserModel()
 
     // --------------- Init loading ---------------
     var initLoading by mutableStateOf(false)
@@ -83,18 +118,36 @@ class HomeViewModel: ViewModel() {
     // --------------- Dialog ---------------
     var isDialogShown by mutableStateOf(false)
         private set
-    fun openLeagueDialog() { isDialogShown = true }
+    fun openLeagueDialog() {
+        isDialogShown = true
+        viewModelScope.launch {
+            try {
+                val currentUser = userModel.getUserInfo(SupabaseClient.getCurrentUID()!!)
+                _players.value += Player(
+                    name = currentUser!!.username,
+                    id = currentUser.uid,
+                    cash = cashForAll.toDouble(),
+                    initValue = cashForAll.toDouble()
+                )
+            } catch (e: Exception) {
+                println("ERROR GETTING CURRENT PLAYER: $e")
+            }
+        }
+    }
     fun closeLeagueDialog() {
         updateLeagueName("")
-        //updatePlayerName("")
-        players = emptyList()
-        useCashForAll = false
+        _players.value = emptyList()
+        useCashForAll = true
         cashForAll = 10000
+        resetDates()
+        closePlayerField()
         isDialogShown = false
+        searchQuery.value = ""
+        _searchResults.value = emptyList()
     }
     // --------------- END Dialog ---------------
 
-    // league name max len = 30
+    // --------------- League Name (30 max) ---------------
     var leagueName by mutableStateOf("")
         private set
     fun updateLeagueName(input: String) {
@@ -102,13 +155,19 @@ class HomeViewModel: ViewModel() {
             leagueName = input
         }
     }
+    // --------------- END League Name ---------------
 
 
-    // date
+    // --------------- Date ---------------
     var startDate by mutableStateOf(System.currentTimeMillis())
         private set
     var endDate by mutableStateOf<Long?>(null)
         private set
+
+    private fun resetDates() {
+        startDate = System.currentTimeMillis()
+        endDate = null
+    }
 
     fun updateStartDate(newDate: Long) {
         if (newDate >= System.currentTimeMillis().morning()) {
@@ -120,145 +179,143 @@ class HomeViewModel: ViewModel() {
             endDate = newDate
         }
     }
+    // --------------- END Date ---------------
 
 
-    // cash
-    var useCashForAll by mutableStateOf(false)
+    // --------------- Cash ---------------
+    var useCashForAll by mutableStateOf(true)
         private set
     fun setCashForAll(checked: Boolean) { useCashForAll = checked }
     var cashForAll by mutableStateOf(10000)
         private set
 
+    var isCashOpen by mutableStateOf(false)
+        private set
+    fun openCash() { isCashOpen = true }
+    fun closeCash() { isCashOpen = false }
+
+    var cashIsOpenFor by mutableStateOf("")
+        private set
+    fun updateCashIsOpenFor(username: String) { cashIsOpenFor = username}
+
+    var singleCash by mutableStateOf(10000)
+        private set
+
+    fun updateSingleCash(cash: String) { singleCash = stringCashToInt(cash) }
+    fun updateSingleCash(cash: Int) { singleCash = cash}
+
     fun updateCashForAll(cash: String) {
-        val withoutCommas = cash.replace(",", "")
-        val value = withoutCommas.toInt()
-        cashForAll = when {
-            (value < 0) -> 0
-            (value > 99999999) -> 99999999
-            else -> value
+        cashForAll = stringCashToInt(cash)
+        _players.value = _players.value.map { player ->
+            player.copy(cash = cashForAll.toDouble(), initValue = cashForAll.toDouble())
         }
     }
 
-    fun cashToString(): String {
-        return doubleStringToMoneyString(cashForAll.toString())
-    }
-
-
-
-    // players
-    var players by mutableStateOf(listOf<User>())
-        private set
-    var addPlayerField by mutableStateOf(false)
-        private set
-
-    fun openPlayerField() { addPlayerField = true }
-    fun closePlayerField() { addPlayerField = false }
-    var playerName by mutableStateOf("")
-        private set
-
-    // --------------- Search Bar ---------------
-    private val _searchText = MutableStateFlow("")
-    val searchText = _searchText.asStateFlow()
-
-    fun onPlayerSearch(input: String) {
-        _searchText.value = input
-        viewModelScope.launch {
-            val res = homeModel.getUsersLike(input, 5)
-        }
-        /*
-
-        viewModelScope.launch {
-            searchText
-                .debounce(500L)
-                .distinctUntilChanged()
-                .filter { it.isNotEmpty() }
-                .onEach { _isSearching.value = true }
-                .flatMapLatest { text ->
-                    getUsersLike(text, 5)
-                }
-                .onEach { _isSearching.value = false }
-                .catch { e ->   // finish loading if fails
-                    _isSearching.value = false
-                    println("ERROR IN USERS FLOW: ${e.message}")
-                }
-                .collect { results ->
-                    _users.value = results
-                }
-        }
-
-         */
-    }
-
-    private val _isSearching = MutableStateFlow(false)
-    val isSearching = _isSearching.asStateFlow()
-
-    private val _users = MutableStateFlow(listOf<User>())
-    val users = _users.asStateFlow()
-
-    private fun getUsersLike(query: String, lim: Long): Flow<List<User>> = flow {
-        try {
-            val users = homeModel.getUsersLike(query, lim)
-            emit(users)
-        } catch (e: Exception) {
-            println("ERROR GETTING USERS FLOW: ${e.message}")
-            emit(emptyList())
-        }
-    }
-
-
-     /*
-        .debounce(500L)
-        .onEach { _isSearching.update { true } }
-        .flatMapLatest { text ->
-            flow {
-                val res = if (text.isBlank()) {
-                    _users.value
-                } else {
-                    createLeagueModel.getUsersLike(text, 5)
-                }
-                emit(listOf<User>(User(1, "alice", "alice@ex.com", "alice", "pass")))
+    fun updateSingleCash() {
+        _players.value = _players.value.map { player ->
+            if (player.name == cashIsOpenFor) {
+                player.copy(cash = singleCash.toDouble(), initValue = singleCash.toDouble())
+            } else {
+                player
             }
         }
-        .onEach { _isSearching.update { false } }
-        .stateIn(
-            viewModelScope,
-            SharingStarted.WhileSubscribed(5000),
-            _users.value
-        )
-      */
-    // --------------- END Search Bar ---------------
+    }
+    // --------------- END Cash ---------------
 
-    /*
-    fun updatePlayerName(input: String) {
-        playerName = input
-    }
-     */
 
-    fun deletePlayerName() {
-        playerName = ""
-        closePlayerField()
+
+    // --------------- Players ---------------
+    private val _players = MutableStateFlow<List<Player>>(emptyList())
+    val players: StateFlow<List<Player>> = _players
+
+    fun removePlayer(player: Player) { _players.value = _players.value.filter { it != player} }
+
+
+    var addPlayerField by mutableStateOf(false)
+        private set
+    fun openPlayerField() { addPlayerField = true }
+    fun closePlayerField() { addPlayerField = false }
+
+    private val _userSearchLoading = MutableStateFlow(false)
+    val userSearchLoading: StateFlow<Boolean> = _userSearchLoading.asStateFlow()
+
+    private val _searchResults = MutableStateFlow<List<UserInformation>>(emptyList())
+    val searchResults: StateFlow<List<UserInformation>> = _searchResults.asStateFlow()
+
+    private val searchQuery = MutableStateFlow("")
+
+    init {
+        viewModelScope.launch {
+            searchQuery
+                .debounce(250)
+                .collectLatest { query ->
+                    if (query.isNotEmpty()) {
+                        performSearch(query)
+                    }
+                }
+        }
     }
-    /*
-    fun addPlayer() {
-        players = players + Player(playerName, 101, 1000.0, 1000.0)
-        playerName = ""
-        closePlayerField()
+
+    fun searchUsers(query: String) { searchQuery.value = query }
+
+    private suspend fun performSearch(query: String) {
+        _userSearchLoading.value = true
+        try {
+            val users = userModel.getUsersLike(query, 10)
+            val filteredUsers = users.filter { user -> !_players.value.any { it.name == user.username } }
+            _searchResults.value = filteredUsers.take(5)
+        } catch (e: Exception) {
+            _searchResults.value = emptyList()
+        } finally {
+            _userSearchLoading.value = false
+        }
     }
-     */
-    fun removePlayer(player: User) { players = players.filter { it != player} }
+
+    fun addPlayerToLeague(player: UserInformation) {
+        val newPlayer =
+            Player(
+                name = player.username,
+                id = player.uid,
+                initValue = cashForAll.toDouble(),
+                cash = cashForAll.toDouble()
+            )
+        _players.value += newPlayer
+    }
+
+    fun clearSearch() {
+        _searchResults.value = emptyList()
+        searchQuery.value = ""
+    }
+
+    // --------------- END Players ---------------
+
+
+
+
 
     // --------------- Create League ---------------
-    private val _leagueCreationResult = MutableStateFlow<League?>(null)
+    private val _leagueCreationResult = MutableStateFlow<Int?>(null)
     val leagueCreationResult = _leagueCreationResult.asStateFlow()
 
     fun createLeague() {
-        val newLeague = League(
-            name = leagueName,
-            startDate = longToLocalDate(startDate),
-            endDate = longToLocalDate(endDate)
-        )
         viewModelScope.launch {
-            val result =  homeModel.insertLeagueAndReturn(newLeague)
+            // insert league first
+            val newLeague = League(
+                name = leagueName,
+                startDate = longToLocalDate(startDate),
+                endDate = longToLocalDate(endDate)
+            )
+            val result =  leagueModel.insertLeagueAndReturnId(newLeague)
+            // insert user_leagues next
+            val userLeagues = _players.value.map {
+                UserLeague(
+                    uid = it.id,
+                    leagueId = result,
+                    cash = if (useCashForAll) cashForAll.toDouble() else it.cash,
+                    initValue = if (useCashForAll) cashForAll.toDouble() else it.initValue
+                )
+            }
+            userLeagueModel.insertUserLeagueList(userLeagues)
             _leagueCreationResult.value = result
             closeLeagueDialog()
         }
@@ -267,18 +324,29 @@ class HomeViewModel: ViewModel() {
     fun resetLeagueCreationResult() {
         _leagueCreationResult.value = null
     }
-
     // --------------- END Create League ---------------
+
+
 
     // --------------- Retrieve leagues ---------------
     private val _leagues = MutableStateFlow<List<League>>(emptyList())
     val leagues = _leagues.asStateFlow()
-    fun getLeagues() {
+    fun getUsersLeagues() {
         viewModelScope.launch {
             initLoading = true
-            val result = homeModel.getLeagues()
-            _leagues.value = result
-            initLoading = false
+            try {
+                val userId = requireNotNull(SupabaseClient.getCurrentUID()) {
+                    "NULL UID WHILE FETCHING USERS LEAGUES"
+                }
+                val userLeagues = userLeagueModel.getUsersLeagues(userId)
+                val leagueIds = userLeagues.mapNotNull { it.leagueId }
+                val result = leagueModel.getLeagues(leagueIds)
+                _leagues.value = result
+            } catch (e: Exception) {
+                println(e)
+            } finally {
+                initLoading = false
+            }
         }
     }
     // --------------- END Retrieve leagues ---------------
