@@ -1,5 +1,6 @@
 package com.example.fantasystocks.ui.screens
 
+import StocksTabViewModel
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -7,7 +8,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Card
@@ -17,10 +17,9 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -28,19 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
-import com.example.fantasystocks.API.StockApiService
-import com.example.fantasystocks.ui.components.StockGraph
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.Serializable
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import com.example.fantasystocks.ui.components.StockGraph
-import android.util.Log
-import com.example.fantasystocks.database.StockDetails
-import com.example.fantasystocks.database.StockRouter
-import java.util.Locale
 
 @Serializable
 object Stocks
@@ -95,7 +82,7 @@ private fun WatchlistTab(goToStockViewer: (String) -> Unit) {
         items(3) { index ->
             StockItem(
                 when (index) {
-                    0 -> Triple("Microsoft", "MSFT", "$259.99")
+                    0 -> Triple("Microsoft", "MSFT", "$430.59")
                     1 -> Triple("Amazon", "AMZN", "$3,378.00")
                     else -> Triple("Tesla", "TSLA", "$678.90")
                 },
@@ -107,21 +94,10 @@ private fun WatchlistTab(goToStockViewer: (String) -> Unit) {
 
 @Composable
 private fun StocksTab(goToStockViewer: (String) -> Unit) {
-    var stockDetails by remember { mutableStateOf<List<StockDetails>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
+    val viewModel = remember { StocksTabViewModel() }
+    val state by viewModel.state.collectAsState()
 
-    LaunchedEffect(Unit) {
-        try {
-            stockDetails = StockRouter.getAvailableStocks()
-        } catch (e: Exception) {
-            // Handle error case
-            Log.e("StocksTab", "Error fetching stocks", e)
-        } finally {
-            isLoading = false
-        }
-    }
-
-    if (isLoading) {
+    if (state.isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
@@ -131,45 +107,16 @@ private fun StocksTab(goToStockViewer: (String) -> Unit) {
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            if (stockDetails.isEmpty()) {
+            if (state.stockDetails.isEmpty()) {
                 item { Text("No stock data available", modifier = Modifier.padding(16.dp)) }
             } else {
-                items(stockDetails.size) { index ->
-                    val stock = stockDetails[index]
+                items(state.stockDetails.size) { index ->
+                    val stock = state.stockDetails[index]
                     StockItem(Triple(stock.ticker, stock.ticker, stock.latestPrice.toString()), goToStockViewer)
                 }
             }
         }
     }
-}
-
-private fun getDateMinusDays(days: Int): String {
-    val calendar = Calendar.getInstance()
-    calendar.add(Calendar.DAY_OF_YEAR, -days)
-    val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-    return dateFormat.format(calendar.time)
-}
-
-private suspend fun fetchStockPricesWithHistory(
-    stocks: List<Pair<String, String>>, 
-    fromDate: String, 
-    toDate: String
-): Map<String, List<Double>> {
-    return coroutineScope {
-        val deferredResults = stocks.map { (ticker, _) ->
-            async {
-                val response = StockApiService.getStockData(ticker, fromDate, toDate)
-                ticker to (response?.results?.map { it.closePrice } ?: emptyList())
-            }
-        }
-        deferredResults.awaitAll().toMap()
-    }
-}
-
-private fun getCurrentDate(): String {
-    val calendar = Calendar.getInstance()
-    val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-    return dateFormat.format(calendar.time)
 }
 
 @Composable
