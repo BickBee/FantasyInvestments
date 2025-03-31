@@ -3,17 +3,18 @@ package com.example.fantasystocks.ui.viewmodels
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.fantasystocks.DATA_FETCHING_DELAY_MS
 import com.example.fantasystocks.database.LeagueData
 import com.example.fantasystocks.database.SessionRouter
 import com.example.fantasystocks.database.StockRouter
 import com.example.fantasystocks.database.SupabaseClient.getCurrentUID
 import com.example.fantasystocks.database.Transaction
 import com.example.fantasystocks.database.TransactionRouter
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 
 val NO_SESSION_SELECTED = "Select a session"
 
@@ -37,7 +38,7 @@ data class StockViewerState(
     val latestPrice: Double = 0.0
 )
 
-class StockViewerViewModel(val stockTicker: String) : ViewModel() {
+class StockViewerViewModel(private val stockTicker: String) : ViewModel() {
     private val _state = MutableStateFlow(StockViewerState())
     val state: StateFlow<StockViewerState> = _state.asStateFlow()
 
@@ -49,7 +50,7 @@ class StockViewerViewModel(val stockTicker: String) : ViewModel() {
             }
             Log.d("StockViewerViewModel", "Current user ID: ${state.value.currentUserId}")
         }
-        fetchStockData()
+        startFetchStockData()
         getLeagues()
     }
 
@@ -131,29 +132,29 @@ class StockViewerViewModel(val stockTicker: String) : ViewModel() {
         }
     }
 
-    fun fetchStockData() {
+    fun startFetchStockData() {
         viewModelScope.launch {
-            try {
-                val stockDetails = StockRouter.getStockDetails(stockTicker)
+            while (true) {
+                try {
+                    val stockDetails = StockRouter.getStockDetails(stockTicker)
 
-                Log.d("StockViewerViewModel", "Stock details: $stockDetails")
-                
-                _state.value = _state.value.copy(
-                    stockTicker = stockDetails.ticker,
-                    currentStockId = stockDetails.id,
-                    stockData = stockDetails.priceHistory,
-                    stockOpen = stockDetails.open,
-                    stockClose = stockDetails.close,
-                    stockHigh = stockDetails.high,
-                    stockLow = stockDetails.low,
-                    latestPrice = stockDetails.latestPrice,
-                    message = "Stock data updated successfully"
-                )
-            } catch (e: Exception) {
-                Log.e("StockViewerViewModel", "Failed to fetch stock data", e)
-                _state.value = _state.value.copy(
-                    message = "Failed to fetch stock data: ${e.message}"
-                )
+                    _state.value = _state.value.copy(
+                        stockTicker = stockDetails.ticker,
+                        currentStockId = stockDetails.id,
+                        stockData = stockDetails.priceHistory,
+                        stockOpen = stockDetails.open,
+                        stockClose = stockDetails.close,
+                        stockHigh = stockDetails.high,
+                        stockLow = stockDetails.low,
+                        latestPrice = stockDetails.latestPrice,
+                    )
+                } catch (e: Exception) {
+                    Log.e("StockViewerViewModel", "Failed to fetch stock data", e)
+                    _state.value = _state.value.copy(
+                        message = "Failed to fetch stock data: ${e.message}"
+                    )
+                }
+                delay(DATA_FETCHING_DELAY_MS)
             }
         }
     }

@@ -1,11 +1,12 @@
 package com.example.fantasystocks.database
 
-import io.github.jan.supabase.postgrest.from
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 import android.util.Log
+import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlin.math.sin
 
 @Serializable
 data class UserStockData(
@@ -61,6 +62,40 @@ object StockRouter {
     private val databaseConnector = SupabaseClient
     private const val PORTFOLIO_TABLE_NAME = "portfolio"
     private const val STOCK_TABLE_NAME = "stock"
+
+    private fun roundToTwoDecimalPlaces(value: Double): Double {
+        return (value * 100.0).toInt() / 100.0
+    }
+
+    private fun simulateStockPrice(
+        openPrice: Double,
+        closePrice: Double,
+        ticker: String,
+    ): Double {
+        //FIXME: technically this is a bad practice as a user can change their system time lmao
+        val currentTimeMillis = System.currentTimeMillis()
+        // Calculate the mid-price and an amplitude for oscillations.
+        val midPrice = (openPrice + closePrice) / 2.0
+        // Use 90% of the half-range so fluctuations usually remain within the open-close boundaries.
+        val amplitude = (closePrice - openPrice) / 2.0 * 0.9
+
+        // Convert time to minutes for a smoother change.
+        val minutes = currentTimeMillis / 60000.0
+
+        // Create a deterministic angle based on time and a ticker-derived seed.
+        val tickerSeed = ticker.hashCode().toDouble()
+        val angle = minutes + (tickerSeed % 360)
+
+        // Use sine for a smooth oscillation between -1 and 1.
+        val oscillation = sin(angle)
+
+        // Optional: add a small lower-frequency bump (e.g., 2% of the midPrice)
+        // This bump can push the price slightly outside the usual open-close range, but only rarely.
+        val bump = 0.02 * midPrice * sin(angle / 10)
+
+        // Calculate the simulated price.
+        return midPrice + (oscillation * amplitude) + bump
+    }
 
     suspend fun getStockQuantity(leagueId: Int, uid: String, stockId: Int): Double {
         try {
@@ -132,12 +167,8 @@ object StockRouter {
                 .select(columns = columns) {
                     limit(count = 30)
                 }
-
-            // Add detailed debugging
-            Log.d("StockRouter", "Raw response: ${stocksWithPrices.data.toString()}")
             
             val decodedStocksWithPrices = stocksWithPrices.decodeList<StockWithPrices>()
-            Log.d("StockRouter", "Decoded stocks: $decodedStocksWithPrices")
 
             return decodedStocksWithPrices
                 .groupBy { it.stockId }
@@ -150,12 +181,12 @@ object StockRouter {
                     StockDetails(
                         ticker = stock.ticker,
                         id = stock.stockId,
-                        priceHistory = stock.historicalStockPrice.map { it.close },
-                        latestPrice = latestPriceData.close,
-                        open = latestPriceData.open,
-                        close = latestPriceData.close,
-                        high = latestPriceData.high,
-                        low = latestPriceData.low
+                        priceHistory = stock.historicalStockPrice.map { roundToTwoDecimalPlaces(it.close) },
+                        latestPrice = roundToTwoDecimalPlaces(simulateStockPrice(latestPriceData.open, latestPriceData.close, stock.ticker)),
+                        open = roundToTwoDecimalPlaces(latestPriceData.open),
+                        close = roundToTwoDecimalPlaces(latestPriceData.close),
+                        high = roundToTwoDecimalPlaces(latestPriceData.high),
+                        low = roundToTwoDecimalPlaces(latestPriceData.low)
                     )
                 }
         } catch (e: Exception) {
@@ -194,12 +225,12 @@ object StockRouter {
             return StockDetails(
                 ticker = stock.ticker,
                 id = stock.id,
-                priceHistory = prices.map { it.close },
-                latestPrice = latestPrice.close,
-                open = latestPrice.open,
-                close = latestPrice.close,
-                high = latestPrice.high,
-                low = latestPrice.low
+                priceHistory = prices.map { roundToTwoDecimalPlaces(it.close) },
+                latestPrice = roundToTwoDecimalPlaces(simulateStockPrice(latestPrice.open, latestPrice.close, ticker)),
+                open = roundToTwoDecimalPlaces(latestPrice.open),
+                close = roundToTwoDecimalPlaces(latestPrice.close),
+                high = roundToTwoDecimalPlaces(latestPrice.high),
+                low = roundToTwoDecimalPlaces(latestPrice.low)
             )
         } catch (e: Exception) {
             Log.e("StockRouter", "Error fetching stock details", e)
@@ -221,8 +252,9 @@ object StockRouter {
 
             // Group by stock_id and take the most recent price for each stock
             return stocks.groupBy { it.stockId }
-                .mapValues { (_, prices) -> 
-                    prices.firstOrNull()?.close ?: 0.0 
+                .mapValues { (_, prices) ->
+                    val latestPrice = prices.firstOrNull() ?: throw Exception("No price data available")
+                    roundToTwoDecimalPlaces(simulateStockPrice(latestPrice.open, latestPrice.close, latestPrice.stockId.toString()))
                 }
         } catch (e: Exception) {
             Log.e("StockRouter", "Error fetching stock price map", e)
