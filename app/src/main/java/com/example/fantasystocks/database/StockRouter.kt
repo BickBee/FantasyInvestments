@@ -261,4 +261,35 @@ object StockRouter {
             throw e
         }
     }
+
+    suspend fun getAllHistoricalClosingPrices(ticker: String): List<Double> {
+        try {
+            // First get the stock basic info to get the stock_id
+            val stock = databaseConnector.supabase
+                .from(STOCK_TABLE_NAME)
+                .select() {
+                    filter {
+                        eq("ticker", ticker)
+                    }
+                }
+                .decodeSingle<StockData>()
+
+            // Then get all historical prices without limit
+            val historicalPrices = databaseConnector.supabase
+                .from("historical_stock_price")
+                .select() {
+                    filter {
+                        eq("stock_id", stock.id)
+                    }
+                    order("timestamp", Order.ASCENDING) // Oldest to newest for time series analysis
+                }
+                .decodeList<HistoricalStockPrice>()
+
+            // Extract only the closing prices
+            return historicalPrices.map { it.close }
+        } catch (e: Exception) {
+            Log.e("StockRouter", "Error fetching all historical closing prices for ticker $ticker", e)
+            throw e
+        }
+    }
 }
