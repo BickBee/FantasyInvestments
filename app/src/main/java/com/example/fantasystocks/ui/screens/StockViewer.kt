@@ -17,26 +17,40 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
+import com.example.fantasystocks.database.StockRouter
 import com.example.fantasystocks.ui.components.StockGraph
 import com.example.fantasystocks.ui.theme.InvalidRed
 import com.example.fantasystocks.ui.viewmodels.NO_SESSION_SELECTED
 import com.example.fantasystocks.ui.viewmodels.StockViewerViewModel
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+
+// Enum to represent date range options
+enum class DateRange(val label: String, val days: Int) {
+    WEEK("1 Week", 7),
+    MONTH("1 Month", 30),
+    THREE_MONTHS("3 Months", 90)
+}
 
 fun NavGraphBuilder.stockViewer() {
     composable<Stock> { backStackEntry ->
@@ -49,19 +63,25 @@ fun NavGraphBuilder.stockViewer() {
 @Composable
 fun StockViewer(stockTicker: String, viewModel: StockViewerViewModel) {
     val state by viewModel.state.collectAsState()
+    val allStockPrices = remember { mutableStateOf<List<Double>>(emptyList()) }
+    val displayedStockPrices = remember { mutableStateOf<List<Double>>(emptyList()) }
+    val selectedDateRange = remember { mutableStateOf(DateRange.MONTH) }
+    val scrollState = rememberScrollState()
 
     LaunchedEffect(Unit) {
         viewModel.getLeagues()
     }
 
     LaunchedEffect(state.selectedSession) {
-        // update displayed balance
+        allStockPrices.value = StockRouter.getAllHistoricalClosingPrices(stockTicker)
+        updateDisplayedPrices(allStockPrices.value, selectedDateRange.value, displayedStockPrices)
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
+            .verticalScroll(scrollState)
     ) {
         // Stock Header
         Text(
@@ -85,14 +105,43 @@ fun StockViewer(stockTicker: String, viewModel: StockViewerViewModel) {
         }
 
         // Stock Graph
-//        StockGraph(
-//            stockData = state.stockData,
-//            modifier = Modifier
-//                .fillMaxWidth()
-//                .height(250.dp)
-//        )
+        if (displayedStockPrices.value.isNotEmpty()) {
+            StockGraph(
+                stockData = displayedStockPrices.value,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(150.dp)
+                    .padding(top = 16.dp)
+            )
+        }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        // Date Range Selection
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            DateRange.values().forEach { range ->
+                val requiredDataPoints = when (range) {
+                    DateRange.WEEK -> 5
+                    DateRange.MONTH -> 20
+                    DateRange.THREE_MONTHS -> 60
+                }
+
+                if (allStockPrices.value.size >= requiredDataPoints) {
+                    FilterChip(
+                        selected = selectedDateRange.value == range,
+                        onClick = {
+                            selectedDateRange.value = range
+                            updateDisplayedPrices(allStockPrices.value, range, displayedStockPrices)
+                        },
+                        label = { Text(range.label) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
 
         // Trading Section
         Card(
@@ -191,12 +240,35 @@ fun StockViewer(stockTicker: String, viewModel: StockViewerViewModel) {
         }
         state.message?.let { message ->
             Snackbar(
-                modifier = Modifier.padding(16.dp),
-                action = {
-                }
+                modifier = Modifier.padding(16.dp)
             ) {
                 Text(message)
             }
         }
+    }
+}
+
+// Helper function to update displayed prices based on selected date range
+private fun updateDisplayedPrices(
+    allPrices: List<Double>,
+    dateRange: DateRange,
+    displayedPrices: androidx.compose.runtime.MutableState<List<Double>>
+) {
+    // Calculate how many data points to show based on date range
+    // Assuming 1 data point per trading day (approx. 20 per month)
+    val dataPointsToShow = when (dateRange) {
+        DateRange.WEEK -> 5 // Approximate trading days in a week
+        DateRange.MONTH -> 20 // Approximate trading days in a month
+        DateRange.THREE_MONTHS -> 60 // Approximate trading days in 3 months
+    }
+
+    // Limit the number of data points based on available data
+    val actualPointsToShow = minOf(dataPointsToShow, allPrices.size)
+
+    // Get the most recent data points
+    displayedPrices.value = if (actualPointsToShow > 0) {
+        allPrices.takeLast(actualPointsToShow)
+    } else {
+        emptyList()
     }
 }
