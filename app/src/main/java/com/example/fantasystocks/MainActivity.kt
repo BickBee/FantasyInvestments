@@ -5,7 +5,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -18,7 +18,6 @@ import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -30,7 +29,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -39,8 +37,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -56,6 +52,7 @@ import com.example.fantasystocks.ui.newsDestination
 import com.example.fantasystocks.ui.screens.AuthScreen
 import com.example.fantasystocks.ui.screens.FriendsListScreen
 import com.example.fantasystocks.ui.screens.Home
+import com.example.fantasystocks.ui.screens.NotificationsScreen
 import com.example.fantasystocks.ui.screens.ProfileDestination
 import com.example.fantasystocks.ui.screens.ProfileScreen
 import com.example.fantasystocks.ui.screens.LeagueScreen
@@ -66,7 +63,9 @@ import com.example.fantasystocks.ui.screens.homeDestination
 import com.example.fantasystocks.ui.screens.profileDestination
 import com.example.fantasystocks.ui.screens.stocksDestination
 import com.example.fantasystocks.ui.theme.FantasyStocksTheme
+import com.example.fantasystocks.ui.theme.ThemeManager
 import com.example.fantasystocks.ui.viewmodels.AuthViewModel
+import com.example.fantasystocks.ui.viewmodels.ProfileViewModel
 import kotlinx.serialization.Serializable
 import com.example.fantasystocks.ui.screens.stockViewer
 import com.example.fantasystocks.ui.screens.Stock
@@ -82,11 +81,22 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val authViewModel: AuthViewModel = viewModel()
+            val profileViewModel: ProfileViewModel = viewModel()
             val isAuthenticated by authViewModel.isAuthenticated.collectAsState()
             val navController = rememberNavController()
             val errorMessage by authViewModel.errorMessage.collectAsState()
             val context = LocalContext.current
-
+            
+            // Use the ThemeManager's state to observe theme changes app-wide
+            val themeManagerDarkMode by ThemeManager.isDarkTheme.collectAsState()
+            
+            // Get user dark mode preference with recomposition on changes
+            val userSettings by profileViewModel.userSettings.collectAsState()
+            
+            // Priority: 1. ThemeManager (set by user settings), 2. System default
+            val systemDarkMode = isSystemInDarkTheme()
+            val isDarkMode = themeManagerDarkMode ?: systemDarkMode
+            
             // Show toast for error messages
             LaunchedEffect(errorMessage) {
                 errorMessage?.let { message ->
@@ -102,6 +112,24 @@ class MainActivity : ComponentActivity() {
             // Check auth state when the app starts
             LaunchedEffect(Unit) {
                 authViewModel.checkAuthState()
+                if (isAuthenticated == true) {
+                    // This will also update the ThemeManager with user preference
+                    profileViewModel.loadUserSettings()
+                }
+            }
+
+            // Initialize ThemeManager with system default if not yet set
+            LaunchedEffect(Unit) {
+                if (themeManagerDarkMode == null) {
+                    ThemeManager.setDarkTheme(systemDarkMode)
+                }
+            }
+
+            // Update ThemeManager when user settings change
+            LaunchedEffect(userSettings) {
+                userSettings?.dark_mode?.let { darkMode ->
+                    ThemeManager.setDarkTheme(darkMode)
+                }
             }
 
             FantasyStocksTheme {
@@ -116,6 +144,7 @@ class MainActivity : ComponentActivity() {
                         navController = navController,
                         authViewModel = authViewModel,
                         onLoginSuccess = {
+                            profileViewModel.loadUserSettings()
                             navController.navigate(MainApp.route) {
                                 popUpTo(AuthScreen.Login.route) { inclusive = true }
                             }
@@ -133,7 +162,17 @@ class MainActivity : ComponentActivity() {
                             onNavigateToChangePassword = {
                                 navController.navigate(AuthScreen.ChangePassword.route)
                             },
+                            onNavigateToNotifications = {
+                                navController.navigate(Notifications.route)
+                            },
                             snackbarHostState = snackbarHostState
+                        )
+                    }
+                    
+                    // Add notifications screen to root NavHost
+                    composable(Notifications.route) {
+                        NotificationsScreen(
+                            onNavigateBack = { navController.popBackStack() }
                         )
                     }
                 }
@@ -149,6 +188,11 @@ data class Profile(val name: String = "User", val email: String = "user@example.
 object FriendsList
 
 @Serializable
+object Notifications {
+    const val route = "notifications"
+}
+
+@Serializable
 object MainApp {
     const val route = "main_app"
 }
@@ -159,6 +203,7 @@ object MainApp {
 fun MyApp(
     onSignOut: () -> Unit = {},
     onNavigateToChangePassword: () -> Unit = {},
+    onNavigateToNotifications: () -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
     val navController = rememberNavController()
@@ -174,6 +219,7 @@ fun MyApp(
         "com.example.fantasystocks.ui.News" -> "News"
         "com.example.fantasystocks.ui.screens.Stocks" -> "Stocks"
         "com.example.fantasystocks.ui.screens.ProfileDestination" -> "Profile"
+        Notifications.route -> "Notifications"
         else -> previousScreenTitle.value
     }
 
@@ -242,7 +288,7 @@ fun MyApp(
                         modifier = Modifier.fillMaxHeight()
                     ) {
                         IconButton(
-                            onClick = { /* Open notifications */ }
+                            onClick = { onNavigateToNotifications() }
                         ) {
                             Icon(
                                 painterResource(id = R.drawable.notif),
@@ -284,7 +330,6 @@ fun MyApp(
             startDestination = Home,
             modifier = Modifier.padding(innerPadding)
         ) {
-            //homeDestination(goToPortfolioViewer = {session_name -> navController.navigate(Portfolio(session_name))})
             homeDestination(goToLeagueScreen = {leagueId -> navController.navigate(LeagueScreen(leagueId))})
             newsDestination(navController)
             profileDestination(
@@ -302,14 +347,6 @@ fun MyApp(
                 goToLeagueSettingsViewer = {leagueJson -> navController.navigate(LeagueSettings(leagueJson)) }
             )
             leagueSettingsViewer(goToHomeScreen = { navController.navigate(Home) { /* TODO pop back stack? */ } })
-            // TODO: For some reason the nav bar gets greyed out when navigating to news article
-//            composable(
-//                route = "news_article?articlePrimaryKey={article.primaryKey}",
-//                arguments = listOf(navArgument("articlePrimaryKey") { defaultValue = -1 })
-//            ) { backStackEntry ->
-//                val articlePrimaryKey = backStackEntry.arguments?.getString("articlePrimaryKey")?.toIntOrNull() ?: -1
-//                NewsArticle(navController, articlePrimaryKey)
-//            }
             composable<Profile> { backStackEntry ->
                 val name = backStackEntry.arguments?.getString("name") ?: "Unknown"
                 ProfileScreen(
@@ -323,6 +360,12 @@ fun MyApp(
 
             composable<FriendsList> {
                 FriendsListScreen()
+            }
+            
+            composable(Notifications.route) {
+                NotificationsScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
             }
         }
     }

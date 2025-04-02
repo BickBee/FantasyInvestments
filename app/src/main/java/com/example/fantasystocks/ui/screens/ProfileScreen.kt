@@ -64,6 +64,8 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import com.example.fantasystocks.FriendsList
 import com.example.fantasystocks.models.Friend
+import com.example.fantasystocks.ui.components.AvatarSelector
+import com.example.fantasystocks.ui.components.UserAvatar
 import com.example.fantasystocks.ui.viewmodels.ProfileViewModel
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
@@ -84,7 +86,7 @@ fun NavGraphBuilder.profileDestination(
             onSignOut = onSignOut
         )
     }
-    
+
     composable<FriendsList> {
         FriendsListScreen()
     }
@@ -101,12 +103,16 @@ fun ProfileScreen(
     val isLoading by profileViewModel.isLoading.collectAsState()
     val errorMessage by profileViewModel.errorMessage.collectAsState()
     val isSuccess by profileViewModel.isSuccess.collectAsState()
-    val settings = profileViewModel.userSettings.collectAsState().value
+    val userSettings by profileViewModel.userSettings.collectAsState()
     
-    // State for username editing
+    // State for username editing and avatar selection
     var isEditingUsername by remember { mutableStateOf(false) }
     var newUsername by remember { mutableStateOf("") }
     var usernameError by remember { mutableStateOf<String?>(null) }
+    var showAvatarSelector by remember { mutableStateOf(false) }
+    
+    // Loading state for the entire profile screen
+    var isPageLoading by remember { mutableStateOf(true) }
     
     // Update newUsername when profile loads
     LaunchedEffect(userProfile.username) {
@@ -129,215 +135,298 @@ fun ProfileScreen(
         }
     }
     
+    // Load all necessary profile data
     LaunchedEffect(Unit) {
+        isPageLoading = true
         profileViewModel.loadUserProfile()
         profileViewModel.loadUserSettings()
+        // Wait for both profile and settings to load
+        isPageLoading = false
     }
     
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "Your Profile",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(bottom = 24.dp)
+    // Update loading state based on profile and settings loading
+    LaunchedEffect(userProfile, userSettings) {
+        isPageLoading = userProfile.username.isEmpty() || userSettings == null
+    }
+    
+    // Set up a non-null version of userSettings for use in the UI
+    val settings = userSettings // Get local copy to avoid multiple collections
+    
+    if (showAvatarSelector && settings != null) {
+        AvatarSelector(
+            selectedAvatarId = settings.avatar_id,
+            onSelectAvatar = { newAvatarId -> 
+                profileViewModel.updateUserSettings(
+                    settings.dark_mode,
+                    settings.notification_enabled,
+                    newAvatarId
+                )
+            },
+            onDismiss = { showAvatarSelector = false }
         )
-        
-        if (isLoading) {
-            CircularProgressIndicator(modifier = Modifier.padding(16.dp))
-        } else {
-            // User avatar placeholder
-            Surface(
-                modifier = Modifier
-                    .size(100.dp)
-                    .clip(CircleShape),
-                color = MaterialTheme.colorScheme.primary
+    }
+    
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        // Loading state for the entire screen
+        if (isPageLoading || settings == null) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        text = if (userProfile.username.isNotEmpty()) 
-                               userProfile.username.take(1).uppercase() 
-                               else "U",
-                        style = MaterialTheme.typography.headlineLarge,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                }
+                CircularProgressIndicator(
+                    modifier = Modifier.size(50.dp),
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Loading profile...",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Card(
+        } else {
+            // Now settings is guaranteed to be non-null here
+            // Content when loaded
+            LazyColumn(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "Account Information", 
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleMedium
+                item {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    // User avatar
+                    UserAvatar(
+                        avatarId = settings.avatar_id,
+                        username = userProfile.username,
+                        size = 90,
+                        onClick = { showAvatarSelector = true }
                     )
-
-                    HorizontalDivider()
                     
-                    Text("Email: ${userProfile.email}")
-                    
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
+                    TextButton(onClick = { showAvatarSelector = true }) {
+                        Text("Change Avatar")
+                    }
+                }
+                
+                item {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
-                        if (isEditingUsername) {
-                            OutlinedTextField(
-                                value = newUsername,
-                                onValueChange = { value -> 
-                                    newUsername = value 
-                                    // Basic validation
-                                    if (value.length < 3) {
-                                        usernameError = "Username must be at least 3 characters long"
-                                    } else if (!value.matches(Regex("^[a-zA-Z0-9_]+$"))) {
-                                        usernameError = "Username can only contain letters, numbers, and underscores"
-                                    } else {
-                                        usernameError = null
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "Account Information", 
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+
+                            HorizontalDivider()
+                            
+                            Text("Email: ${userProfile.email}")
+                            
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                if (isEditingUsername) {
+                                    OutlinedTextField(
+                                        value = newUsername,
+                                        onValueChange = { value -> 
+                                            newUsername = value 
+                                            // Basic validation
+                                            if (value.length < 3) {
+                                                usernameError = "Username must be at least 3 characters long"
+                                            } else if (!value.matches(Regex("^[a-zA-Z0-9_]+$"))) {
+                                                usernameError = "Username can only contain letters, numbers, and underscores"
+                                            } else {
+                                                usernameError = null
+                                            }
+                                        },
+                                        label = { Text("Username") },
+                                        modifier = Modifier.weight(1f),
+                                        isError = usernameError != null,
+                                        supportingText = { 
+                                            if (usernameError != null) {
+                                                Text(
+                                                    text = usernameError!!,
+                                                    color = MaterialTheme.colorScheme.error
+                                                )
+                                            }
+                                        }
+                                    )
+                                    
+                                    IconButton(
+                                        onClick = {
+                                            if (usernameError == null && newUsername != userProfile.username) {
+                                                profileViewModel.updateUsername(newUsername)
+                                            } else if (newUsername == userProfile.username) {
+                                                isEditingUsername = false
+                                            }
+                                        },
+                                        enabled = usernameError == null
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = "Save username"
+                                        )
                                     }
-                                },
-                                label = { Text("Username") },
-                                modifier = Modifier.weight(1f),
-                                isError = usernameError != null,
-                                supportingText = { 
-                                    if (usernameError != null) {
-                                        Text(
-                                            text = usernameError!!,
-                                            color = MaterialTheme.colorScheme.error
+                                    
+                                    IconButton(
+                                        onClick = {
+                                            newUsername = userProfile.username
+                                            isEditingUsername = false
+                                            usernameError = null
+                                        }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Clear,
+                                            contentDescription = "Cancel"
+                                        )
+                                    }
+                                } else {
+                                    Text(
+                                        text = "Username: ${userProfile.username}",
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    
+                                    IconButton(
+                                        onClick = { isEditingUsername = true }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Edit,
+                                            contentDescription = "Edit username"
                                         )
                                     }
                                 }
-                            )
-                            
-                            IconButton(
-                                onClick = {
-                                    if (usernameError == null && newUsername != userProfile.username) {
-                                        profileViewModel.updateUsername(newUsername)
-                                    } else if (newUsername == userProfile.username) {
-                                        isEditingUsername = false
-                                    }
-                                },
-                                enabled = usernameError == null
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = "Save username"
-                                )
                             }
-                            
-                            IconButton(
-                                onClick = {
-                                    newUsername = userProfile.username
-                                    isEditingUsername = false
-                                    usernameError = null
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Clear,
-                                    contentDescription = "Cancel"
-                                )
-                            }
-                        } else {
-                            Text(
-                                text = "Username: ${userProfile.username}",
-                                modifier = Modifier.weight(1f)
-                            )
-                            
-                            IconButton(
-                                onClick = { isEditingUsername = true }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Edit,
-                                    contentDescription = "Edit username"
-                                )
-                            }
-                        }
-                    }
-                    
-                    if (settings != null) {
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                        
-                        Text(
-                            text = "Settings", 
-                            fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Dark Mode")
-                            Switch(
-                                checked = settings.dark_mode,
-                                onCheckedChange = { 
-                                    profileViewModel.updateUserSettings(
-                                        it, 
-                                        settings.notification_enabled
-                                    )
-                                }
-                            )
-                        }
-                        
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Notifications")
-                            Switch(
-                                checked = settings.notification_enabled,
-                                onCheckedChange = { 
-                                    profileViewModel.updateUserSettings(
-                                        settings.dark_mode,
-                                        it
-                                    )
-                                }
-                            )
                         }
                     }
                 }
-            }
-            
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            Button(
-                onClick = onNavigateToFriendsList,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Friends List")
-            }
-            
-            Button(
-                onClick = onNavigateToChangePassword,
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
-            ) {
-                Text("Change Password")
-            }
-            
-            Spacer(modifier = Modifier.weight(1f))
-            
-            Button(
-                onClick = onSignOut,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                    contentColor = MaterialTheme.colorScheme.onErrorContainer
-                )
-            ) {
-                Text("Sign Out")
+                
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "Settings", 
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            
+                            HorizontalDivider()
+                            
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Dark Mode")
+                                
+                                if (isLoading) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(24.dp),
+                                        strokeWidth = 2.dp
+                                    )
+                                } else {
+                                    Switch(
+                                        checked = settings.dark_mode,
+                                        onCheckedChange = { newDarkMode -> 
+                                            profileViewModel.updateUserSettings(
+                                                newDarkMode, 
+                                                settings.notification_enabled,
+                                                settings.avatar_id
+                                            )
+                                        }
+                                    )
+                                }
+                            }
+                            
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Notifications")
+                                
+                                if (isLoading) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(24.dp),
+                                        strokeWidth = 2.dp
+                                    )
+                                } else {
+                                    Switch(
+                                        checked = settings.notification_enabled,
+                                        onCheckedChange = { newNotificationValue -> 
+                                            profileViewModel.updateUserSettings(
+                                                settings.dark_mode,
+                                                newNotificationValue,
+                                                settings.avatar_id
+                                            )
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                item {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    Button(
+                        onClick = onNavigateToFriendsList,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Friends List")
+                    }
+                }
+                
+                item {
+                    Button(
+                        onClick = onNavigateToChangePassword,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Change Password")
+                    }
+                }
+                
+                item {
+                    Button(
+                        onClick = onSignOut,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    ) {
+                        Text("Sign Out")
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+                
+                item {
+                    // Show spinner for operations like updating username
+                    if (isLoading && !isPageLoading) {
+                        Box(modifier = Modifier.fillMaxWidth()) {
+                            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                        }
+                    }
+                }
             }
         }
     }
@@ -353,23 +442,31 @@ fun FriendsListScreen(
     val isLoading by profileViewModel.isLoading.collectAsState()
     val errorMessage by profileViewModel.errorMessage.collectAsState()
     
+    // Add a dedicated loading state for the entire friends list screen
+    var isPageLoading by remember { mutableStateOf(true) }
+    
     var selectedTab by remember { mutableIntStateOf(0) }
     var showAddFriendDialog by remember { mutableStateOf(false) }
     
+    // Load data when the screen is first shown and manage the loading state
     LaunchedEffect(Unit) {
+        isPageLoading = true
         profileViewModel.loadFriends()
         profileViewModel.loadFriendRequests()
+        // Add a small delay to ensure complete loading and avoid flicker
+        delay(500)
+        isPageLoading = false
     }
     
     if (showAddFriendDialog) {
         AddFriendDialog(
             onDismiss = { showAddFriendDialog = false },
-            onAddFriend = { username ->
+            onAddFriend = { username -> 
                 profileViewModel.sendFriendRequest(username)
                 showAddFriendDialog = false
             }
         )
-}
+    }
     
     Column(
         modifier = Modifier
@@ -398,18 +495,44 @@ fun FriendsListScreen(
             Tab(
                 selected = selectedTab == 0,
                 onClick = { selectedTab = 0 },
-                text = { Text("Friends (${friends.size})") }
+                text = { 
+                    Text(if (isPageLoading) "Friends" else "Friends (${friends.size})")
+                }
             )
             Tab(
                 selected = selectedTab == 1,
                 onClick = { selectedTab = 1 },
-                text = { Text("Requests (${incomingFriendRequests.size + outgoingFriendRequests.size})") }
+                text = { 
+                    Text(if (isPageLoading) "Requests" else "Requests (${incomingFriendRequests.size + outgoingFriendRequests.size})")
+                }
             )
         }
         
         Spacer(modifier = Modifier.height(16.dp))
         
-        if (isLoading) {
+        // Show a full-page loading state while the data is loading
+        if (isPageLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(50.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Loading friends...",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        } else if (isLoading) {
+            // Show a loading indicator for operations like accepting/rejecting requests
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -426,7 +549,7 @@ fun FriendsListScreen(
                     } else {
                         FriendsList(
                             friends = friends,
-                            onRemoveFriend = { friendId ->
+                            onRemoveFriend = { friendId -> 
                                 profileViewModel.removeFriend(friendId)
                             }
                         )
@@ -439,13 +562,13 @@ fun FriendsListScreen(
                         )
                     } else {
                         FriendRequestsTab(
-                            onAcceptRequest = { friendId ->
+                            onAcceptRequest = { friendId -> 
                                 profileViewModel.acceptFriendRequest(friendId)
                             },
-                            onRejectRequest = { friendId ->
+                            onRejectRequest = { friendId -> 
                                 profileViewModel.rejectFriendRequest(friendId)
                             },
-                            onCancelRequest = { friendId ->
+                            onCancelRequest = { friendId -> 
                                 profileViewModel.cancelFriendRequest(friendId)
                             },
                             profileViewModel = profileViewModel
@@ -563,7 +686,7 @@ fun AddFriendDialog(
                             .fillMaxWidth()
                             .height(200.dp)
                     ) {
-                        items(searchResults) { result ->
+                        items(searchResults) { result -> 
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -660,7 +783,7 @@ fun FriendsList(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(friends) { friend ->
+        items(friends) { friend -> 
             FriendItem(
                 friend = friend,
                 onRemove = { onRemoveFriend(friend.id) }
@@ -691,9 +814,10 @@ fun FriendRequestsTab(
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
-            incomingFriendRequests.forEach { friend ->
+            incomingFriendRequests.forEach { friend -> 
                 FriendRequestItem(
                     username = friend.username,
+                    avatarId = friend.avatarId,
                     onAccept = { onAcceptRequest(friend.id) },
                     onReject = { onRejectRequest(friend.id) },
                     isIncoming = true
@@ -708,9 +832,10 @@ fun FriendRequestsTab(
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
             )
-            outgoingFriendRequests.forEach { friend ->
+            outgoingFriendRequests.forEach { friend -> 
                 FriendRequestItem(
                     username = friend.username,
+                    avatarId = friend.avatarId,
                     onCancel = { onCancelRequest(friend.id) },
                     isIncoming = false
                 )
@@ -735,6 +860,7 @@ fun FriendRequestsTab(
 @Composable
 fun FriendRequestItem(
     username: String,
+    avatarId: Int = 0,
     onAccept: (() -> Unit)? = null,
     onReject: (() -> Unit)? = null,
     onCancel: (() -> Unit)? = null,
@@ -753,11 +879,24 @@ fun FriendRequestItem(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = username,
-                style = MaterialTheme.typography.bodyLarge,
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.weight(1f)
-            )
+            ) {
+                // Add avatar to the friend request item
+                UserAvatar(
+                    avatarId = avatarId,
+                    username = username,
+                    size = 40
+                )
+                
+                Spacer(modifier = Modifier.width(12.dp))
+                
+                Text(
+                    text = username,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
             
             if (isIncoming) {
                 Row(
@@ -811,21 +950,12 @@ fun FriendItem(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Friend avatar
-            Surface(
-                modifier = Modifier
-                    .size(50.dp)
-                    .clip(CircleShape),
-                color = MaterialTheme.colorScheme.secondary
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        text = friend.username.take(1).uppercase(),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSecondary
-                    )
-                }
-            }
+            // Friend avatar with the correct avatarId
+            UserAvatar(
+                username = friend.username,
+                avatarId = friend.avatarId,
+                size = 50
+            )
             
             Spacer(modifier = Modifier.width(16.dp))
             
