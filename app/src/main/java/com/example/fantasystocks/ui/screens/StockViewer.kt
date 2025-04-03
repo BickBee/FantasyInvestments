@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -29,21 +31,18 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
+import com.example.fantasystocks.TRANSACTION_FEE
 import com.example.fantasystocks.database.StockRouter
 import com.example.fantasystocks.ui.components.StockGraph
 import com.example.fantasystocks.ui.theme.InvalidRed
 import com.example.fantasystocks.ui.viewmodels.NO_SESSION_SELECTED
 import com.example.fantasystocks.ui.viewmodels.StockViewerViewModel
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 
 // Enum to represent date range options
 enum class DateRange(val label: String, val days: Int) {
@@ -67,6 +66,8 @@ fun StockViewer(stockTicker: String, viewModel: StockViewerViewModel) {
     val displayedStockPrices = remember { mutableStateOf<List<Double>>(emptyList()) }
     val selectedDateRange = remember { mutableStateOf(DateRange.MONTH) }
     val scrollState = rememberScrollState()
+    val stockPrice = state.latestPrice * if (state.quantity.isEmpty()) 0.0 else state.quantity.toDouble()
+    val totalTransactionFee = stockPrice * TRANSACTION_FEE
 
     LaunchedEffect(Unit) {
         viewModel.getLeagues()
@@ -216,6 +217,10 @@ fun StockViewer(stockTicker: String, viewModel: StockViewerViewModel) {
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
+
+                Text("Transaction fee percentage: 0.5%")
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("Transaction Fee: $${String.format("%.2f", totalTransactionFee ?: 0)}")
 
                 // Buy/Sell Buttons
                 Row(

@@ -1,32 +1,29 @@
 package com.example.fantasystocks.ui.viewmodels
 
 import android.os.Build
-import androidx.compose.runtime.mutableStateOf
-import androidx.lifecycle.ViewModel
+import android.util.Log
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.fantasystocks.LEAGUE_DATA_FETCHING_DELAY_MS
 import com.example.fantasystocks.classes.League
 import com.example.fantasystocks.classes.Player
-import com.example.fantasystocks.classes.User
 import com.example.fantasystocks.classes.UserLeague
 import com.example.fantasystocks.database.SupabaseClient
 import com.example.fantasystocks.models.LeagueModel
 import com.example.fantasystocks.models.UserInformation
 import com.example.fantasystocks.models.UserLeagueModel
 import com.example.fantasystocks.models.UserModel
-import io.github.jan.supabase.auth.user.UserInfo
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
@@ -35,12 +32,11 @@ import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.toJavaInstant
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
-import java.sql.Time
 import java.text.SimpleDateFormat
 import java.time.ZoneOffset
-import java.util.Locale
-import java.util.Date
 import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 fun Long.morning(): Long {
     val calendar = Calendar.getInstance().apply {
@@ -342,18 +338,22 @@ class HomeViewModel: ViewModel() {
     fun getUsersLeagues() {
         viewModelScope.launch {
             initLoading = true
-            try {
-                val userId = requireNotNull(SupabaseClient.getCurrentUID()) {
-                    "NULL UID WHILE FETCHING USERS LEAGUES"
+            while (true) {
+                try {
+                    val userId = requireNotNull(SupabaseClient.getCurrentUID()) {
+                        "NULL UID WHILE FETCHING USERS LEAGUES"
+                    }
+                    val userLeagues = userLeagueModel.getUsersLeagues(userId)
+                    val leagueIds = userLeagues.mapNotNull { it.leagueId }
+                    val result = leagueModel.getLeagues(leagueIds)
+                    _leagues.value = result
+                } catch (e: Exception) {
+                    println(e)
+                } finally {
+                    initLoading = false
                 }
-                val userLeagues = userLeagueModel.getUsersLeagues(userId)
-                val leagueIds = userLeagues.mapNotNull { it.leagueId }
-                val result = leagueModel.getLeagues(leagueIds)
-                _leagues.value = result
-            } catch (e: Exception) {
-                println(e)
-            } finally {
-                initLoading = false
+                delay(LEAGUE_DATA_FETCHING_DELAY_MS)
+                Log.d("HomeViewModel", "Fetched more leagues")
             }
         }
     }

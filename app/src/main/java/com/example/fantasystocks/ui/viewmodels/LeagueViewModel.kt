@@ -1,5 +1,6 @@
 package com.example.fantasystocks.ui.viewmodels
 
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -10,11 +11,15 @@ import com.example.fantasystocks.classes.League
 import com.example.fantasystocks.classes.Player
 import com.example.fantasystocks.classes.Stock
 import com.example.fantasystocks.classes.Transaction
+import com.example.fantasystocks.database.PortfolioRouter
+import com.example.fantasystocks.database.SupabaseClient.getCurrentUID
 import com.example.fantasystocks.models.LeagueModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.time.LocalDateTime
 import java.time.format.TextStyle
 import java.util.Locale
@@ -102,16 +107,19 @@ class LeagueViewModel: ViewModel() {
 
     fun getTxns(uid: String, leagueId: Int) {
         viewModelScope.launch {
-            try {
-                _txnLoading.value = true
-                val txns = model.getUserTxns(uid, leagueId)
-                println(txns)
-                _transactions.value = txns
-            } catch (e: Exception) {
-                println("ERROR GETTING TXNS: $e")
-                _transactions.value = null
-            } finally {
-                _txnLoading.value = false
+            while (true) {
+                try {
+                    _txnLoading.value = true
+                    val txns = model.getUserTxns(uid, leagueId)
+                    println(txns)
+                    _transactions.value = txns
+                } catch (e: Exception) {
+                    println("ERROR GETTING TXNS: $e")
+                    _transactions.value = null
+                } finally {
+                    _txnLoading.value = false
+                }
+                delay(5000)
             }
         }
     }
@@ -119,6 +127,19 @@ class LeagueViewModel: ViewModel() {
 
     // portfolio chart values
     fun portValuesInit(): List<Double> {
-        return listOf(4095.77, 4034.29, 3958.20, 3723.18, 3689.83, 3773.59)
+        // get portfolio values from database
+        val portValues = mutableListOf<Double>(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+        val uid = getCurrentUID()!!
+        val leagueId = league.value?.id
+
+        Log.d("LeagueViewModel", "League ID: $leagueId")
+        Log.d("LeagueViewModel", "UID: $uid")
+
+        runBlocking {
+            if (leagueId != null) {
+                portValues.addAll(PortfolioRouter.getHistoricalPortfolioValues(uid, leagueId).map { it.value })
+            }
+        }
+        return portValues
     }
 }

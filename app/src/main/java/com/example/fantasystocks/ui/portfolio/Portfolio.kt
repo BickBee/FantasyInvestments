@@ -39,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.fantasystocks.TRANSACTION_FEE
 import com.example.fantasystocks.classes.League
 import com.example.fantasystocks.classes.Player
 import com.example.fantasystocks.database.SupabaseClient
@@ -47,6 +48,7 @@ import com.example.fantasystocks.ui.components.StockGraph
 import com.example.fantasystocks.ui.viewmodels.LeagueViewModel
 import com.example.fantasystocks.ui.viewmodels.doubleMoneyToString
 import com.example.fantasystocks.ui.viewmodels.timestampToDay
+import kotlinx.coroutines.delay
 
 
 @Composable
@@ -63,7 +65,7 @@ fun Portfolio(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = doubleMoneyToString(player.getTotalValue()),
+                text = doubleMoneyToString(player.getTotalValue(leagueId)),
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier
@@ -157,8 +159,11 @@ fun PortfolioComposable(
     var stockPrices by remember { mutableStateOf<Map<Int, Double>>(emptyMap()) }
     
     LaunchedEffect(player) {
-        val stockIds = player.portfolio.keys.map { it.id }
-        stockPrices = StockRouter.getStockPriceMap(stockIds)
+        while (true) {
+            val stockIds = player.portfolio.keys.map { it.id }
+            stockPrices = StockRouter.getStockPriceMap(stockIds)
+            delay(5000)
+        }
     }
 
     LazyColumn(
@@ -166,7 +171,7 @@ fun PortfolioComposable(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        items(player.getPortfolio(sortBy = Player.SortBy.VALUE)) { stockPair ->
+        items(player.getPortfolio(sortBy = Player.SortBy.VALUE).filter { it.second != 0 }) { stockPair ->
             val currentPrice = stockPrices[stockPair.first.id] ?: 1.0
             Card(
                 modifier = Modifier
@@ -211,11 +216,11 @@ fun PortfolioComposable(
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
                     }
-                    Text(
-                        text = "+2.99%", // TODO: Calculate actual percentage change
-                        fontWeight = FontWeight.Light,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+//                    Text(
+//                        text = "+2.99%", // TODO: Calculate actual percentage change
+//                        fontWeight = FontWeight.Light,
+//                        style = MaterialTheme.typography.bodyMedium
+//                    )
                 }
             }
         }
@@ -268,7 +273,7 @@ fun Activity(
                         )
                     }
                     Text(
-                        text = "${txn.quantity} ${txn.stockName}",
+                        text = "${txn.quantity} ${txn.stockName} @ ${doubleMoneyToString(txn.price)} each (fees: ${doubleMoneyToString(txn.quantity * txn.price * TRANSACTION_FEE)})",
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier

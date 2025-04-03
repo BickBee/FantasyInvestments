@@ -71,43 +71,7 @@ fun StocksScreen(goToStockViewer: (String) -> Unit) {
     var selectedTab by remember { mutableIntStateOf(0) }
     
     Column(modifier = Modifier.fillMaxSize()) {
-        TabRow(selectedTabIndex = selectedTab) {
-            Tab(
-                selected = selectedTab == 0,
-                onClick = { selectedTab = 0 },
-                text = { Text("Watchlist") }
-            )
-            Tab(
-                selected = selectedTab == 1,
-                onClick = { selectedTab = 1 },
-                text = { Text("Stocks") }
-            )
-        }
-
-        when (selectedTab) {
-            0 -> WatchlistTab(goToStockViewer)
-            1 -> StocksTab(goToStockViewer)
-        }
-    }
-}
-
-@Composable
-private fun WatchlistTab(goToStockViewer: (String) -> Unit) {
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        items(3) { index ->
-            StockItem(
-                when (index) {
-                    0 -> Triple("Microsoft", "MSFT", "$430.59")
-                    1 -> Triple("Amazon", "AMZN", "$3,378.00")
-                    else -> Triple("Tesla", "TSLA", "$678.90")
-                },
-                goToStockViewer
-            )
-        }
+        StocksTab(goToStockViewer)
     }
 }
 

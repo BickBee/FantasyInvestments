@@ -31,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -54,6 +55,8 @@ fun LeaderboardComposable(
     viewModel: LeagueViewModel,
     leaderboard: Leaderboard?
 ) {
+    val leagueState = viewModel.league.collectAsState()
+    val leagueId = leagueState.value?.id!!
     if (leaderboard == null) {
         CircularProgressIndicator()
     } else {
@@ -69,7 +72,7 @@ fun LeaderboardComposable(
                     .weight(2f)
                     .fillMaxSize()
             ) {
-                TopLeaderboard(top3)
+                TopLeaderboard(leagueId, top3)
             }
             Card(
                 modifier = Modifier
@@ -82,7 +85,7 @@ fun LeaderboardComposable(
                     bottomEnd = 0.dp
                 )
             ) {
-                BottomLeaderboard(rest)
+                BottomLeaderboard(leagueId, rest)
             }
         }
     }
@@ -90,6 +93,7 @@ fun LeaderboardComposable(
 
 @Composable
 fun TopLeaderboard(
+    leagueId: Int,
     players: List<Player>   // [1st, 2nd, 3rd]
 ) {
     Row(
@@ -105,7 +109,7 @@ fun TopLeaderboard(
                     .fillMaxHeight(),
                 contentAlignment = Alignment.BottomCenter
             ) {
-                TopItem(players[1], "🥈")
+                TopItem(players[1], "🥈", leagueId)
             }
         }
         if (players.size >= 1) {
@@ -115,7 +119,7 @@ fun TopLeaderboard(
                     .fillMaxHeight(),
                 contentAlignment = Alignment.TopCenter
             ) {
-                TopItem(players[0], "🥇")
+                TopItem(players[0], "🥇", leagueId)
             }
         }
         if (players.size >= 3) {
@@ -125,7 +129,7 @@ fun TopLeaderboard(
                     .fillMaxHeight(),
                 contentAlignment = Alignment.BottomCenter
             ) {
-                TopItem(players[2], "🥉")
+                TopItem(players[2], "🥉", leagueId)
             }
         }
     }
@@ -134,7 +138,8 @@ fun TopLeaderboard(
 @Composable
 fun TopItem(
     player: Player,
-    medal: String
+    medal: String,
+    leagueId: Int
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
@@ -152,13 +157,14 @@ fun TopItem(
             text = player.name,
             fontWeight = FontWeight.Bold
         )
-        Text(text = doubleMoneyToString(player.getTotalValue()))
+        Text(text = doubleMoneyToString(player.getTotalValue(leagueId)))
     }
 }
 
 
 @Composable
 fun BottomLeaderboard(
+    leagueId: Int,
     players: List<Player> // [p4, p5, ...]
 ) {
     if (players.isNotEmpty()) {
@@ -172,7 +178,7 @@ fun BottomLeaderboard(
                 )
         ) {
             itemsIndexed(players) { idx, player ->
-                LeaderboardItem(idx + 4, player)
+                LeaderboardItem(idx + 4, player, leagueId)
             }
         }
     } else {
@@ -185,7 +191,7 @@ fun BottomLeaderboard(
 }
 
 @Composable
-fun LeaderboardItem(rank: Int, player: Player) {
+fun LeaderboardItem(rank: Int, player: Player, leagueId: Int) {
     val cardColor = when (player.name) {
         "You" -> MaterialTheme.colorScheme.primary
         else -> Color.White
@@ -223,7 +229,7 @@ fun LeaderboardItem(rank: Int, player: Player) {
                 modifier = Modifier.weight(1f)
             )
             Text(
-                text = doubleMoneyToString(player.getTotalValue()),
+                text = doubleMoneyToString(player.getTotalValue(leagueId)),
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.weight(1f)
             )
