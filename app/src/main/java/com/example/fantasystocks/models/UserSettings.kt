@@ -12,5 +12,6 @@ data class UserInformation(
 data class UserSettings(
     val uid: String, // UUID as string
     val dark_mode: Boolean = false,
-    val notification_enabled: Boolean = true
-) 
+    val notification_enabled: Boolean = true,
+    val avatar_id: Int = 0 // Default avatar is 0
+)

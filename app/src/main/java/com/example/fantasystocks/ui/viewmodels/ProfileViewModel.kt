@@ -5,6 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.example.fantasystocks.database.SupabaseClient
 import com.example.fantasystocks.models.Friend
 import com.example.fantasystocks.models.UserSettings
+import com.example.fantasystocks.ui.theme.ThemeManager
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,6 +30,9 @@ class ProfileViewModel : ViewModel() {
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+    
+    // Keep track of ongoing operations that can be cancelled
+    private var activeLoadingJobs = mutableListOf<Job>()
     
     private val _friends = MutableStateFlow<List<Friend>>(emptyList())
     val friends: StateFlow<List<Friend>> = _friends.asStateFlow()
@@ -148,7 +154,7 @@ class ProfileViewModel : ViewModel() {
     }
     
     fun loadFriendRequests() {
-        viewModelScope.launch {
+        val job = viewModelScope.launch {
             _isLoading.value = true
             try {
                 val incomingRequests = SupabaseClient.getIncomingFriendRequests()
@@ -156,11 +162,14 @@ class ProfileViewModel : ViewModel() {
                 _incomingFriendRequests.value = incomingRequests
                 _outgoingFriendRequests.value = outgoingRequests
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _errorMessage.value = "Error loading friend requests: ${e.message}"
             } finally {
                 _isLoading.value = false
             }
         }
+        activeLoadingJobs.add(job)
+        job.invokeOnCompletion { activeLoadingJobs.remove(job) }
     }
     
     fun sendFriendRequest(username: String) {
@@ -311,31 +320,64 @@ class ProfileViewModel : ViewModel() {
             try {
                 val settings = SupabaseClient.getUserSettings()
                 _userSettings.value = settings
+                
+                // Update ThemeManager with user's dark mode preference
+                settings?.dark_mode?.let { darkMode ->
+                    ThemeManager.setDarkTheme(darkMode)
+                }
             } catch (e: Exception) {
                 _errorMessage.value = "Failed to load user settings: ${e.message}"
             }
         }
     }
     
-    fun updateUserSettings(darkMode: Boolean, notificationEnabled: Boolean) {
+    fun updateUserSettings(darkMode: Boolean, notificationEnabled: Boolean, avatarId: Int) {
         viewModelScope.launch {
             _isLoading.value = true
+            _isSuccess.value = null
             _errorMessage.value = null
             
             try {
                 val currentUser = SupabaseClient.getCurrentUser()
                 if (currentUser != null) {
+                    // If settings haven't changed, don't make a database call
+                    val currentSettings = _userSettings.value
+                    if (currentSettings != null && 
+                        currentSettings.dark_mode == darkMode && 
+                        currentSettings.notification_enabled == notificationEnabled && 
+                        currentSettings.avatar_id == avatarId) {
+                        _isSuccess.value = true
+                        _isLoading.value = false
+                        return@launch
+                    }
+                    
+                    // Create updated settings
                     val updatedSettings = UserSettings(
                         uid = currentUser.id,
                         dark_mode = darkMode,
-                        notification_enabled = notificationEnabled
+                        notification_enabled = notificationEnabled,
+                        avatar_id = avatarId
                     )
-
+                    
+                    // Update UI state immediately for responsive user experience
+                    _userSettings.value = updatedSettings
+                    
+                    // Update ThemeManager immediately for app-wide theme changes
+                    ThemeManager.setDarkTheme(darkMode)
+                    
+                    // Then update in database
                     val success = SupabaseClient.updateUserSettings(updatedSettings)
+                    
                     if (success) {
-                        _userSettings.value = updatedSettings
+                        // Force state update to ensure recomposition in collectors
+                        // We create a new object with the same values to ensure state change detection
+                        _userSettings.value = updatedSettings.copy()
                         _isSuccess.value = true
                     } else {
+                        // Revert to previous settings if failed
+                        _userSettings.value = currentSettings
+                        // Revert ThemeManager if database update failed
+                        currentSettings?.dark_mode?.let { ThemeManager.setDarkTheme(it) }
                         _errorMessage.value = "Failed to update settings"
                         _isSuccess.value = false
                     }
@@ -368,5 +410,15 @@ class ProfileViewModel : ViewModel() {
                 _errorMessage.value = "Error canceling friend request: ${e.message}"
             }
         }
+    }
+    
+    /**
+     * Cancels any ongoing loading operations and resets loading state
+     * This is useful when navigating away from a screen before data loads
+     */
+    fun cancelLoading() {
+        activeLoadingJobs.forEach { it.cancel() }
+        activeLoadingJobs.clear()
+        _isLoading.value = false
     }
 }

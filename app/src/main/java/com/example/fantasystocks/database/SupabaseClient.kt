@@ -205,6 +205,7 @@ object SupabaseClient {
                     .update({
                         set("dark_mode", settings.dark_mode)
                         set("notification_enabled", settings.notification_enabled)
+                        set("avatar_id", settings.avatar_id)
                     }) {
                         filter {
                             eq("uid", settings.uid)
@@ -271,15 +272,18 @@ object SupabaseClient {
                     }
                     .decodeList<FriendRequestResponse>()
                 
-                // Process results to get usernames
+                // Process results to get usernames and avatar IDs
                 results.map { result ->
                     val friendId = result.friend_id
                     val username = getUsername(friendId) ?: "Unknown"
+                    val settings = getUserSettings(friendId)
+                    val avatarId = settings?.avatar_id ?: 0
                     
                     Friend(
                         id = friendId,
                         username = username,
-                        status = FriendStatus.ACCEPTED
+                        status = FriendStatus.ACCEPTED,
+                        avatarId = avatarId
                     )
                 }
             } catch (e: Exception) {
@@ -304,15 +308,18 @@ object SupabaseClient {
                     }
                     .decodeList<FriendRequestResponse>()
                 
-                // Process results to get usernames
+                // Process results to get usernames and avatar IDs
                 results.map { result ->
                     val friendId = result.user_id
                     val username = getUsername(friendId) ?: "Unknown"
+                    val settings = getUserSettings(friendId)
+                    val avatarId = settings?.avatar_id ?: 0
                     
                     Friend(
                         id = friendId,
                         username = username,
-                        status = FriendStatus.PENDING
+                        status = FriendStatus.PENDING,
+                        avatarId = avatarId
                     )
                 }
             } catch (e: Exception) {
@@ -337,15 +344,18 @@ object SupabaseClient {
                     }
                     .decodeList<FriendRequestResponse>()
                 
-                // Process results to get usernames
+                // Process results to get usernames and avatar IDs
                 results.map { result ->
                     val friendId = result.friend_id
                     val username = getUsername(friendId) ?: "Unknown"
+                    val settings = getUserSettings(friendId)
+                    val avatarId = settings?.avatar_id ?: 0
                     
                     Friend(
                         id = friendId,
                         username = username,
-                        status = FriendStatus.PENDING
+                        status = FriendStatus.PENDING,
+                        avatarId = avatarId
                     )
                 }
             } catch (e: Exception) {
