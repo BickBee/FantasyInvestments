@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fantasystocks.DATA_FETCHING_DELAY_MS
+import com.example.fantasystocks.TRANSACTION_FEE
 import com.example.fantasystocks.database.LeagueData
 import com.example.fantasystocks.database.SessionRouter
 import com.example.fantasystocks.database.StockRouter
@@ -102,13 +103,17 @@ class StockViewerViewModel(private val stockTicker: String) : ViewModel() {
                 return@launch
             }
 
+            val quantity = state.value.quantity.toDoubleOrNull() ?: 0.0
+            val price = state.value.latestPrice
+
             val transaction = Transaction(
                 uid = state.value.currentUserId,
                 league_id = state.value.currentLeagueId,
                 stock_id = state.value.currentStockId,
                 action = if (isBuy) "BUY" else "SELL",
-                quantity = state.value.quantity.toDoubleOrNull() ?: 0.0,
-                price = state.value.latestPrice
+                quantity = quantity,
+                price = price,
+                transaction_fee = quantity * price * TRANSACTION_FEE
             )
 
             println("Creating transaction: $transaction")
@@ -132,7 +137,7 @@ class StockViewerViewModel(private val stockTicker: String) : ViewModel() {
         }
     }
 
-    fun startFetchStockData() {
+    private fun startFetchStockData() {
         viewModelScope.launch {
             while (true) {
                 try {

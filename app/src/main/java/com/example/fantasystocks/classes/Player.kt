@@ -1,6 +1,8 @@
 package com.example.fantasystocks.classes
 
+import com.example.fantasystocks.database.PortfolioRouter
 import com.example.fantasystocks.ui.viewmodels.doubleStringToMoneyString
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.util.Locale
@@ -30,13 +32,16 @@ data class Player (
     var cash: Double,
     val portfolio: MutableMap<Stock, Int> = mutableMapOf()
 ) {
-    fun getTotalValue(): Double {
+    fun getTotalValue(leagueId: Int): Double {
+        // TODO: get latest historical balance
         var sum = 0.0
-        portfolio.forEach { (stock, num) -> sum += stock.price * num }
-        return initValue // FIXME: this is hardcoded
+        runBlocking {
+            sum = PortfolioRouter.getLatestPortfolioValue(id, leagueId) ?: initValue
+        }
+        return sum
     }
 
-    fun totalReturn(): Double = (getTotalValue() - initValue) / initValue
+    fun totalReturn(leagueId: Int): Double = (getTotalValue(leagueId) - initValue) / initValue
 
     private fun positionSize(position: Pair<Stock, Int>) = position.first.price * position.second
 
@@ -57,7 +62,7 @@ data class Player (
 
     fun assetAllocation(sortBy: SortBy = SortBy.VALUE): List<Triple<Stock, Int, Double>> {
         return getPortfolio(sortBy).map {
-            Triple(it.first, it.second,positionSize(it) / getTotalValue())
+            Triple(it.first, it.second,positionSize(it) / initValue) // FIXME: replace init value?!
         }
     }
 }
