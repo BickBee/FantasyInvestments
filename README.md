@@ -10,11 +10,26 @@ PUT VIDEO AND SCREENSHOT LINKS HERE
 ## Running
 This app is optimized for the Pixel 9 Pro (API 35, VanillaIceCream OS). Performance on other devices may vary.
 
-## Getting Started  
-1. Clone the repository:  
-   `https://git.uwaterloo.ca/oelserwi/cs346-lab101-4.git`
+## 🚀 Getting Started
 
-2. ...
+1. **Clone the Repository**  
+   Clone the project to your local machine:  
+   ```bash
+   git clone https://git.uwaterloo.ca/oelserwi/cs346-lab101-4.git
+
+2. **Open the Project in Android Studio**  
+   - Launch Android Studio 
+   - Select "Open", then navigate to the cloned project folder  
+   - Let Gradle sync and finish building the project
+
+3. **Install the APK on a Device or Emulator**  
+   - Navigate to the `app/release` folder inside the project directory  
+   - Locate the pre-built APK file  
+   - Drag and drop the APK onto a connected Android device or running emulator
+
+4. **Launch the App**  
+   - The app should now appear on your device  
+   - Tap to open and start using Fantasy Investments!
 
 ## Team \#4 Details:
 * Nicholas Lee (n65lee@uwaterloo.ca)  
