@@ -7,6 +7,7 @@ import io.github.jan.supabase.postgrest.query.Order
 import kotlin.math.sin
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.math.sin
 
 @Serializable
 data class UserStockData(
@@ -272,6 +273,32 @@ object StockRouter {
                         )
                 )
             }
+        } catch (e: Exception) {
+            Log.e("StockRouter", "Error fetching stock price map", e)
+            throw e
+        }
+    }
+
+    // returned list always of size 2 (newPrice, yesterday's close)
+    suspend fun getStockPriceMapWithClose(stockIds: List<Int>): Map<Int, List<Double>> {
+        try {
+            val stocks = databaseConnector.supabase
+                .from("historical_stock_price")
+                .select {
+                    filter {
+                        isIn("stock_id", stockIds)
+                    }
+                    order("timestamp", Order.DESCENDING)
+                }
+                .decodeList<HistoricalStockPrice>()
+
+            // Group by stock_id and take the most recent price for each stock
+            return stocks.groupBy { it.stockId }
+                .mapValues { (_, prices) ->
+                    val latestPrice = prices.firstOrNull() ?: throw Exception("No price data available")
+                    listOf(roundToTwoDecimalPlaces(simulateStockPrice(latestPrice.open, latestPrice.close, latestPrice.stockId.toString())),
+                        latestPrice.close)
+                }
         } catch (e: Exception) {
             Log.e("StockRouter", "Error fetching stock price map", e)
             throw e

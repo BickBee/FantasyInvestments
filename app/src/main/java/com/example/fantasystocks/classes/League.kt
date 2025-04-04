@@ -50,4 +50,11 @@ data class League(
         }
         return false
     }
+
+    fun allStockIds(): List<Int> {
+        return players
+            .flatMap { it.portfolio.keys }
+            .map { stock -> stock.id }
+            .distinct()
+    }
 }

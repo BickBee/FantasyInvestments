@@ -105,24 +105,36 @@ EXECUTE FUNCTION update_timestamp();
 
 -- View for player portfolios
 CREATE VIEW player_portfolio_view AS
+WITH last_price AS
+  (
+    SELECT DISTINCT ON (stock_id) stock_id, close
+    FROM historical_stock_price
+    ORDER BY stock_id, timestamp DESC
+  )
 SELECT
     ul.uid,
     ul.league_id,
     ui.username,
+    us.avatar_id,
     ul.cash,
     ul.initial_value,
     p.stock_id,
     p.quantity,
     s.name AS stock_name,
-    s.ticker AS stock_ticker
+    s.ticker AS stock_ticker,
+    lp.close AS price
 FROM
     user_league ul
 JOIN
     user_information ui ON ul.uid = ui.uid
+JOIN
+    user_settings us ON ul.uid = us.uid
 LEFT JOIN
     portfolio p ON ul.uid = p.uid AND ul.league_id = p.league_id
 LEFT JOIN
-    stock s ON p.stock_id = s.stock_id;
+    stock s ON p.stock_id = s.stock_id
+LEFT JOIN
+    last_price lp ON s.stock_id = lp.stock_id;
 
 -- View for transactions
 CREATE VIEW transaction_view AS
@@ -140,3 +152,12 @@ FROM
     transactions t
 JOIN
     stock s ON t.stock_id = s.stock_id;
+
+-- View for user_info with txns
+CREATE VIEW user_info_with_avatar AS
+SELECT
+  ui.uid,
+  username,
+  avatar_id
+FROM user_information ui
+JOIN user_settings us ON ui.uid = us.uid;

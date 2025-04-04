@@ -70,13 +70,17 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import com.example.fantasystocks.classes.Player
+import com.example.fantasystocks.classes.User
+import com.example.fantasystocks.classes.UserInformationWithAvatar
 import com.example.fantasystocks.database.SupabaseClient
 import com.example.fantasystocks.models.UserInformation
+import com.example.fantasystocks.ui.components.UserAvatar
 import com.example.fantasystocks.ui.theme.InvalidRed
 import com.example.fantasystocks.ui.viewmodels.cashToString
 import com.example.fantasystocks.ui.viewmodels.convertMillisToDate
 import com.example.fantasystocks.ui.viewmodels.doubleStringToMoneyString
 import com.example.fantasystocks.ui.viewmodels.localToUTC
+import java.time.LocalDate
 import java.time.ZoneOffset
 
 @Composable
@@ -334,7 +338,7 @@ fun AddPlayersSection(
 
 @Composable
 fun UserSearchCard(
-    user: UserInformation,
+    user: UserInformationWithAvatar,
     onClick: () -> Unit,
     padding: Int = 0,
 ) {
@@ -356,9 +360,10 @@ fun UserSearchCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Icon(
-                imageVector = Icons.Default.AccountCircle,
-                contentDescription = "User",
+            UserAvatar(
+                avatarId = user.avatarId,
+                username = user.username,
+                size = 28,
             )
             Spacer(modifier = Modifier.width(16.dp))
             Text(user.username)
@@ -392,14 +397,15 @@ fun SelectedPlayerCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp, horizontal = 12.dp),
+                .padding(vertical = 10.dp, horizontal = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(modifier = Modifier.weight(1.9f)) {
-                Icon(
-                    imageVector = Icons.Default.AccountCircle,
-                    contentDescription = "User",
+                UserAvatar(
+                    avatarId = player.avatarId,
+                    username = player.name,
+                    size = 28,
                 )
                 Spacer(modifier = Modifier.width(16.dp))
                 Text(player.name)
@@ -544,7 +550,7 @@ fun DatePickerFieldToModal(
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 class FutureSelectableDates(private val start: Long?, private val end: Long?): SelectableDates {
-    private val now = java.time.LocalDate.now()
+    private val now = LocalDate.now()
     private val dayStart = now.atTime(0, 0, 0, 0).toEpochSecond(ZoneOffset.UTC) * 1000
 
     @ExperimentalMaterial3Api

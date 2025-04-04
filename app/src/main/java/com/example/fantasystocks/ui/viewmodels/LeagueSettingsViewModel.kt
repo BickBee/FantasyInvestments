@@ -10,6 +10,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fantasystocks.classes.League
 import com.example.fantasystocks.classes.Player
 import com.example.fantasystocks.classes.User
+import com.example.fantasystocks.classes.UserInformationWithAvatar
 import com.example.fantasystocks.classes.UserLeague
 import com.example.fantasystocks.database.SupabaseClient
 import com.example.fantasystocks.models.DateType
@@ -107,8 +108,8 @@ class LeagueSettingsViewModel(val league: League): ViewModel() {
     private val _userSearchLoading = MutableStateFlow(false)
     val userSearchLoading: StateFlow<Boolean> = _userSearchLoading.asStateFlow()
 
-    private val _searchResults = MutableStateFlow<List<UserInformation>>(emptyList())
-    val searchResults: StateFlow<List<UserInformation>> = _searchResults.asStateFlow()
+    private val _searchResults = MutableStateFlow<List<UserInformationWithAvatar>>(emptyList())
+    val searchResults: StateFlow<List<UserInformationWithAvatar>> = _searchResults.asStateFlow()
 
     private val searchQuery = MutableStateFlow("")
 
@@ -130,6 +131,7 @@ class LeagueSettingsViewModel(val league: League): ViewModel() {
         _userSearchLoading.value = true
         try {
             val users = userModel.getUsersLike(query, 10)
+            println("\n\n$users\n\n")
             val filteredUsers = users.filter { user -> !_players.value.any { it.name == user.username } }
             _searchResults.value = filteredUsers.take(5)
         } catch (e: Exception) {
@@ -145,6 +147,7 @@ class LeagueSettingsViewModel(val league: League): ViewModel() {
                 Player(
                     name = cashIsOpenFor!!.username,
                     id = cashIsOpenFor!!.uid,
+                    avatarId = cashIsOpenFor!!.avatarId,
                     initValue = newPlayerCash.toDouble(),
                     cash = newPlayerCash.toDouble()
                 )
@@ -173,9 +176,9 @@ class LeagueSettingsViewModel(val league: League): ViewModel() {
     fun openNewPlayerCash() { isNewPlayerCashOpen = true}
     fun closeNewPlayerCash() { isNewPlayerCashOpen = false}
 
-    var cashIsOpenFor by mutableStateOf<UserInformation?>(null)
+    var cashIsOpenFor by mutableStateOf<UserInformationWithAvatar?>(null)
         private set
-    fun updateCashIsOpenFor(user: UserInformation) { cashIsOpenFor = user }
+    fun updateCashIsOpenFor(user: UserInformationWithAvatar) { cashIsOpenFor = user }
 
     var newPlayerCash by mutableStateOf(10000)
         private set

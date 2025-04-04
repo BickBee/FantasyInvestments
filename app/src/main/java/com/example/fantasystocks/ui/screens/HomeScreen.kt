@@ -8,7 +8,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -92,6 +94,56 @@ fun HomeScreen(
                 }
             }
         } else {
+            // added logic to separate ongoing, upcoming and past league
+
+//            item {
+//                Text(
+//                    text = "Your Leagues",
+//                    style = MaterialTheme.typography.titleMedium,
+//                    modifier = Modifier.padding(vertical = 16.dp)
+//                )
+//            }
+//            items(viewModel.getCurrentLeagues()) { league ->
+//                SessionItem(
+//                    league = league,
+//                    subtitle = "Ongoing competition",
+//                    goToLeagueScreen = goToLeagueScreen
+//                )
+//            }
+//
+//            item {
+//                Text(
+//                    text = "Upcoming Leagues",
+//                    style = MaterialTheme.typography.titleMedium,
+//                    modifier = Modifier.padding(vertical = 16.dp)
+//                )
+//            }
+//
+//            items(viewModel.getUpcomingLeagues()) { league ->
+//                SessionItem(
+//                    league = league,
+//                    subtitle = "Starting Soon",
+//                    goToLeagueScreen = goToLeagueScreen
+//                )
+//            }
+//
+//            item {
+//                Text(
+//                    text = "Finished Leagues",
+//                    style = MaterialTheme.typography.titleMedium,
+//                    modifier = Modifier.padding(vertical = 16.dp)
+//                )
+//            }
+//
+//            items(viewModel.getFinishedLeagues()) { league ->
+//                SessionItem(
+//                    league = league,
+//                    subtitle = "Finished",
+//                    goToLeagueScreen = goToLeagueScreen
+//                )
+//            }
+
+
             items(leagues) { league ->
                 SessionItem(
                     league = league,
@@ -99,15 +151,7 @@ fun HomeScreen(
                     goToLeagueScreen = goToLeagueScreen
                 )
             }
-            /* TODO separate ongoing with upcoming sessions
-            item {
-                Text(
-                    text = "Upcoming Sessions",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(vertical = 16.dp)
-                )
-            }
-             */
+
         }
 
 
@@ -130,20 +174,20 @@ private fun SessionItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 4.dp)
+            .clickable {
+                try {
+                    val leagueId = requireNotNull(league.id) { "CAN NOT CLICK, LEAGUE ID NULL" }
+                    goToLeagueScreen(leagueId)
+                } catch (e: Exception) {
+                    println(e)
+                }
+            },
     ) {
         Row(
             modifier = Modifier
                 .padding(16.dp)
-                .fillMaxWidth()
-                .clickable {
-                    try {
-                        val leagueId = requireNotNull(league.id) { "CAN NOT CLICK, LEAGUE ID NULL" }
-                        goToLeagueScreen(leagueId)
-                    } catch (e: Exception) {
-                        println(e)
-                    }
-                },
+                .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column {
