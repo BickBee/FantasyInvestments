@@ -691,25 +691,30 @@ fun AddFriendDialog(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        selectedUsername = result.username
+                                        if (selectedUsername == result.username) {
+                                            selectedUsername = null
+                                        } else {
+                                            selectedUsername = result.username
+                                        }
                                         username = result.username
                                         keyboardController?.hide()
                                     }
                                     .padding(vertical = 8.dp, horizontal = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    imageVector = if (selectedUsername == result.username) 
-                                        Icons.Default.Check 
-                                    else 
-                                        Icons.Default.Person,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(24.dp),
-                                    tint = if (selectedUsername == result.username) 
-                                        MaterialTheme.colorScheme.primary 
-                                    else 
-                                        MaterialTheme.colorScheme.onSurface
-                                )
+                                if (selectedUsername == result.username) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(24.dp),
+                                        tint = if (selectedUsername == result.username)
+                                            MaterialTheme.colorScheme.primary
+                                        else
+                                            MaterialTheme.colorScheme.onSurface
+                                    )
+                                } else {
+                                    UserAvatar(result.avatarId, result.username, size = 24)
+                                }
                                 
                                 Spacer(modifier = Modifier.width(8.dp))
                                 

@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.SerialName
 
 data class UserProfile(
     val email: String = "",
@@ -21,7 +22,9 @@ data class UserProfile(
 
 data class SearchResult(
     val id: String,
-    val username: String
+    val username: String,
+    @SerialName("avatar_id")
+    val avatarId: Int
 )
 
 class ProfileViewModel : ViewModel() {
@@ -299,7 +302,7 @@ class ProfileViewModel : ViewModel() {
                     !_outgoingFriendRequests.value.any { it.username == user.username }
                 }
                 _searchResults.value = filteredUsers.map { 
-                    SearchResult(it.uid, it.username) 
+                    SearchResult(it.uid, it.username, it.avatarId)
                 }
             } catch (e: Exception) {
                 _errorMessage.value = "Error searching users: ${e.message}"
