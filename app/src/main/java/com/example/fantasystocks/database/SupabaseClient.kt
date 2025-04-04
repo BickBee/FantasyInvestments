@@ -1,5 +1,6 @@
 package com.example.fantasystocks.database
 
+import com.example.fantasystocks.classes.UserInformationWithAvatar
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
@@ -384,7 +385,7 @@ object SupabaseClient {
                 // If accepted, create the reverse relationship
                 if (accept) {
                     supabase.from("user_friends")
-                        .insert(FriendRequest(
+                        .upsert(FriendRequest(
                             user_id = currentUserId,
                             friend_id = friendId,
                             status = "ACCEPTED"
@@ -427,17 +428,17 @@ object SupabaseClient {
         }
     }
 
-    suspend fun searchUsers(query: String): List<UserInformation> {
+    suspend fun searchUsers(query: String): List<UserInformationWithAvatar> {
         return withContext(Dispatchers.IO) {
             try {
-                supabase.from("user_information")
+                supabase.from("user_info_with_avatar")
                     .select() {
                         filter {
                             ilike("username", "%$query%")
                         }
                         limit(10)
                     }
-                    .decodeList<UserInformation>()
+                    .decodeList<UserInformationWithAvatar>()
             } catch (e: Exception) {
                 emptyList()
             }

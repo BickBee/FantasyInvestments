@@ -112,6 +112,8 @@ fun OtherPlayersPortfolio(
                         val initValue = currentPLayer!!.initValue
                         StockGraph(listOf(initValue, initValue, cash, cash - 0.00001))
                     } else {
+                        val slightlyDifferentHistoricalValues = historicalValues
+                        slightlyDifferentHistoricalValues!![0] += 0.0001
                         StockGraph(historicalValues!!)
                     }
                 }
