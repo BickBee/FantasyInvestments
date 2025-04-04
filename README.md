@@ -39,3 +39,4 @@ This app is optimized for the Pixel 9 Pro (API 35, VanillaIceCream OS). Performa
 - [Version 0.1.1](https://git.uwaterloo.ca/oelserwi/cs346-lab101-4/-/wikis/Releases/%7BVersion-0.1.1%7D)
 - [Version 0.2.0](https://git.uwaterloo.ca/oelserwi/cs346-lab101-4/-/wikis/Releases/%7BVersion-0.2.0%7D)
 - [Version 0.3.0](https://git.uwaterloo.ca/oelserwi/cs346-lab101-4/-/wikis/Releases/Version-0.3.0)
+- [Version 0.3.0](https://git.uwaterloo.ca/oelserwi/cs346-lab101-4/-/wikis/Releases/Version-0.4.0)
