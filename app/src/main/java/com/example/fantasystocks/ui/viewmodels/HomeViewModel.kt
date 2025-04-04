@@ -2,18 +2,18 @@ package com.example.fantasystocks.ui.viewmodels
 
 import android.os.Build
 import android.util.Log
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewModelScope
 import com.example.fantasystocks.LEAGUE_DATA_FETCHING_DELAY_MS
 import com.example.fantasystocks.classes.League
 import com.example.fantasystocks.classes.Player
+import com.example.fantasystocks.classes.UserInformationWithAvatar
 import com.example.fantasystocks.classes.UserLeague
 import com.example.fantasystocks.database.SupabaseClient
 import com.example.fantasystocks.models.LeagueModel
-import com.example.fantasystocks.models.UserInformation
 import com.example.fantasystocks.models.UserLeagueModel
 import com.example.fantasystocks.models.UserModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -34,9 +34,9 @@ import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
 import java.text.SimpleDateFormat
 import java.time.ZoneOffset
-import java.util.Calendar
-import java.util.Date
 import java.util.Locale
+import java.util.Date
+import java.util.Calendar
 
 fun Long.morning(): Long {
     val calendar = Calendar.getInstance().apply {
@@ -123,6 +123,7 @@ class HomeViewModel: ViewModel() {
                 _players.value += Player(
                     name = currentUser!!.username,
                     id = currentUser.uid,
+                    avatarId = currentUser.avatarId,
                     cash = cashForAll.toDouble(),
                     initValue = cashForAll.toDouble()
                 )
@@ -144,11 +145,11 @@ class HomeViewModel: ViewModel() {
     }
     // --------------- END Dialog ---------------
 
-    // --------------- League Name (30 max) ---------------
+    // --------------- League Name (19 max) ---------------
     var leagueName by mutableStateOf("")
         private set
     fun updateLeagueName(input: String) {
-        if (input.length <= 30) {
+        if (input.length <= 19) {
             leagueName = input
         }
     }
@@ -236,8 +237,8 @@ class HomeViewModel: ViewModel() {
     private val _userSearchLoading = MutableStateFlow(false)
     val userSearchLoading: StateFlow<Boolean> = _userSearchLoading.asStateFlow()
 
-    private val _searchResults = MutableStateFlow<List<UserInformation>>(emptyList())
-    val searchResults: StateFlow<List<UserInformation>> = _searchResults.asStateFlow()
+    private val _searchResults = MutableStateFlow<List<UserInformationWithAvatar>>(emptyList())
+    val searchResults: StateFlow<List<UserInformationWithAvatar>> = _searchResults.asStateFlow()
 
     private val searchQuery = MutableStateFlow("")
 
@@ -268,11 +269,12 @@ class HomeViewModel: ViewModel() {
         }
     }
 
-    fun addPlayerToLeague(player: UserInformation) {
+    fun addPlayerToLeague(player: UserInformationWithAvatar) {
         val newPlayer =
             Player(
                 name = player.username,
                 id = player.uid,
+                avatarId = player.avatarId,
                 initValue = cashForAll.toDouble(),
                 cash = cashForAll.toDouble()
             )
@@ -353,8 +355,32 @@ class HomeViewModel: ViewModel() {
                     initLoading = false
                 }
                 delay(LEAGUE_DATA_FETCHING_DELAY_MS)
-                Log.d("HomeViewModel", "Fetched more leagues")
+                Log.d("HomeViewModel", "Fetched More League")
             }
+        }
+    }
+    fun getCurrentLeagues(): List<League> {
+        val now = System.currentTimeMillis()
+        return _leagues.value.filter { league ->
+            val start = league.startDate?.atStartOfDayIn(TimeZone.currentSystemDefault())?.toEpochMilliseconds() ?: 0
+            val end = league.endDate?.atStartOfDayIn(TimeZone.currentSystemDefault())?.toEpochMilliseconds()
+
+            start <= now && (end == null || now <= end)
+        }
+    }
+    fun getUpcomingLeagues(): List<League> {
+        val now = System.currentTimeMillis()
+        return _leagues.value.filter { league ->
+            val start = league.startDate?.atStartOfDayIn(TimeZone.currentSystemDefault())?.toEpochMilliseconds() ?: Long.MAX_VALUE
+            start > now
+        }
+    }
+
+    fun getFinishedLeagues(): List<League> {
+        val now = System.currentTimeMillis()
+        return _leagues.value.filter { league ->
+            val end = league.endDate?.atStartOfDayIn(TimeZone.currentSystemDefault())?.toEpochMilliseconds() ?: 0
+            end < now
         }
     }
     // --------------- END Retrieve leagues ---------------

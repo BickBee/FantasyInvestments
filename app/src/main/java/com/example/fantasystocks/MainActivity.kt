@@ -37,8 +37,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -47,6 +49,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.fantasystocks.models.UserModel
 import com.example.fantasystocks.ui.News
 import com.example.fantasystocks.ui.newsDestination
 import com.example.fantasystocks.ui.screens.AuthScreen
@@ -57,6 +60,7 @@ import com.example.fantasystocks.ui.screens.ProfileDestination
 import com.example.fantasystocks.ui.screens.ProfileScreen
 import com.example.fantasystocks.ui.screens.LeagueScreen
 import com.example.fantasystocks.ui.screens.LeagueSettings
+import com.example.fantasystocks.ui.screens.OtherPlayersPortfolio
 import com.example.fantasystocks.ui.screens.Stocks
 import com.example.fantasystocks.ui.screens.authScreens
 import com.example.fantasystocks.ui.screens.homeDestination
@@ -71,7 +75,9 @@ import com.example.fantasystocks.ui.screens.stockViewer
 import com.example.fantasystocks.ui.screens.Stock
 import com.example.fantasystocks.ui.screens.leagueScreenViewer
 import com.example.fantasystocks.ui.screens.leagueSettingsViewer
+import com.example.fantasystocks.ui.screens.otherPlayersPortfolio
 import com.example.fantasystocks.ui.screens.portfolioViewer
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 
 class MainActivity : ComponentActivity() {
@@ -230,8 +236,8 @@ fun MyApp(
 
     val navItemList = listOf(
         NavItem("Home", Icons.Default.Home, Home),
-        NavItem("News", Icons.Default.Build, News),
-        NavItem("Stocks", Icons.Default.Face, Stocks),
+        NavItem("News", ImageVector.vectorResource(R.drawable.baseline_newspaper_24), News),
+        NavItem("Stocks", ImageVector.vectorResource(R.drawable.stock_graph), Stocks),
         NavItem("Profile", Icons.Default.Person, ProfileDestination)
     )
     val baseRoutes = navItemList.map {item -> item.route.javaClass.toString().removePrefix("class ")}
@@ -344,9 +350,11 @@ fun MyApp(
             portfolioViewer(goToStockViewer = {stock -> navController.navigate(Stock(stock))})
             leagueScreenViewer(
                 goToStockViewer = {stock -> navController.navigate(Stock(stock))},
-                goToLeagueSettingsViewer = {leagueJson -> navController.navigate(LeagueSettings(leagueJson)) }
+                goToLeagueSettingsViewer = {leagueJson -> navController.navigate(LeagueSettings(leagueJson)) },
+                goToOtherPlayersPortfolio = { playerJson, leagueId -> navController.navigate(OtherPlayersPortfolio(playerJson, leagueId)) }
             )
             leagueSettingsViewer(goToHomeScreen = { navController.navigate(Home) { /* TODO pop back stack? */ } })
+            otherPlayersPortfolio()
             composable<Profile> { backStackEntry ->
                 val name = backStackEntry.arguments?.getString("name") ?: "Unknown"
                 ProfileScreen(

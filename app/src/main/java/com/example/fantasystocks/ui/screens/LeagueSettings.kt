@@ -60,6 +60,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import com.example.fantasystocks.classes.League
 import com.example.fantasystocks.database.SupabaseClient
+import com.example.fantasystocks.ui.components.UserAvatar
 import com.example.fantasystocks.ui.theme.InvalidRed
 import com.example.fantasystocks.ui.viewmodels.LeagueSettingsViewModel
 import com.example.fantasystocks.ui.viewmodels.LeagueSettingsViewModelFactory
@@ -210,9 +211,10 @@ fun LeagueSettings(
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.AccountCircle,
-                                        contentDescription = "Player profile picture"
+                                    UserAvatar(
+                                        avatarId = player.avatarId,
+                                        username = player.name,
+                                        size = 28,
                                     )
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Text(player.name)

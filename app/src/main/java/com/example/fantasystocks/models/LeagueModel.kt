@@ -1,5 +1,6 @@
 package com.example.fantasystocks.models
 
+import com.example.fantasystocks.classes.HistoricalValue
 import com.example.fantasystocks.classes.League
 import com.example.fantasystocks.classes.Player
 import com.example.fantasystocks.classes.PlayerPortfolioView
@@ -8,6 +9,7 @@ import com.example.fantasystocks.classes.Transaction
 import com.example.fantasystocks.classes.UserLeague
 import com.example.fantasystocks.database.SupabaseClient
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -112,17 +114,20 @@ class LeagueModel() {
                     val portfolio = mutableMapOf<Stock, Int>()
                     entries.forEach { entry ->
                         if (entry.stockId != null && entry.stockName != null &&
-                            entry.stockTicker != null && entry.quantity != null) {
+                            entry.stockTicker != null && entry.quantity != null &&
+                            entry.price != null) {
                             portfolio[Stock(
                                 id = entry.stockId,
                                 name = entry.stockName,
-                                ticker = entry.stockTicker)
+                                ticker = entry.stockTicker,
+                                price = entry.price)
                             ] = entry.quantity.toInt()
                         }
                     }
                     Player(
                         name = firstEntry.username,
                         id = firstEntry.id,
+                        avatarId = firstEntry.avatarId,
                         initValue = firstEntry.initValue,
                         cash = firstEntry.cash,
                         portfolio = portfolio
@@ -163,9 +168,9 @@ class LeagueModel() {
                     }
             }
             deleteFrom("user_league")
-//            deleteFrom("historical_portfolio_value")
-//            deleteFrom("portfolio")
-//             deleteFrom("transactions")
+            deleteFrom("historical_portfolio_value")
+            deleteFrom("portfolio")
+             deleteFrom("transactions")
         } catch (e: Exception) {
             println("ERROR REMOVING PLAYER: $e")
         }
@@ -205,6 +210,25 @@ class LeagueModel() {
         } catch (e: Exception) {
             println("ERROR FETCHING USERS TRANSACTIONS: $e")
             null
+        }
+    }
+
+    suspend fun getHistoricalValues(uid: String, leagueId: Int): List<HistoricalValue> {
+        return try {
+            supabase
+                .from("historical_portfolio_value")
+                .select(Columns.list("value")) {
+                    filter {
+                        eq("uid", uid)
+                        eq("league_id", leagueId)
+                    }
+                    order(column = "timestamp", order = Order.DESCENDING)
+                    limit(90)
+                }
+                .decodeList<HistoricalValue>()
+        } catch (e: Exception) {
+            println("ERROR FETCHING HISTORICAL VALUES: $e")
+            emptyList<HistoricalValue>()
         }
     }
 }

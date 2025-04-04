@@ -15,6 +15,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 val InvalidRed = Color(0xFFE86563)
+val PositiveGreen = Color(0XFF07AB25)
 
 // Custom dark color scheme that matches our brand
 private val CustomDarkColorScheme = darkColorScheme(

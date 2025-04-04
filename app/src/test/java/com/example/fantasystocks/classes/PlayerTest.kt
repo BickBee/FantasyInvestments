@@ -11,6 +11,7 @@ class PlayerTest {
         val player = Player(
             "Alice",
             "103",
+            1,
             1000.0,
             115.0,
             mutableMapOf(Pair(stock1, 3), Pair(stock2, 2))
@@ -24,6 +25,7 @@ class PlayerTest {
         val player = Player(
             "Bob",
             "118",
+            1,
             1000.0,
             400.57,
             mutableMapOf(Pair(stock1, 5))
@@ -39,6 +41,7 @@ class PlayerTest {
         val player = Player(
             "Charlie",
             "129",
+            2,
             10000.0,
             2500.0,
             mutableMapOf(Pair(stock1, 2), Pair(stock2, 5), Pair(stock3, 10))
@@ -66,14 +69,15 @@ class PlayerTest {
         val player = Player(
             "Dave",
             "1192",
+            3,
             5000.0,
             1187.13,
             mutableMapOf(Pair(stock1, 2), Pair(stock2, 15), Pair(stock3, 2), Pair(stock4, 5))
         )
         val allocation = player.assetAllocation()
-        assertEquals(0.2241, allocation[0].third, 0.0001)
-        assertEquals(0.1827, allocation[1].third, 0.0001)
-        assertEquals(0.1317, allocation[2].third, 0.0001)
-        assertEquals(0.1294, allocation[3].third, 0.0001)
+        assertEquals(0.160164, allocation[0].third, 0.0001)
+        assertEquals(0.13059, allocation[1].third, 0.0001)
+        assertEquals(0.094104, allocation[2].third, 0.0001)
+        assertEquals(0.09246, allocation[3].third, 0.0001)
     }
 }
