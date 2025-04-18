@@ -7,7 +7,7 @@ A fantasy stock market simulator where users invest fake money into real compani
 Fantasy Investments gamifies financial literacy by simulating an investment platform with real-time market data. Users can join leagues, build portfolios, and track performance — all without risking real money. Targeted at students and young adults looking to learn about investing in a safe, competitive way.
 
 ## Video/Screenshots  
-[Checkout The Video Here!]([https://youtube.com/shorts/2PB1dTUTY3Y?feature=share](https://youtube.com/shorts/lYU0af8TFDQ?feature=share))
+[Checkout The Video Here!](https://youtube.com/shorts/lYU0af8TFDQ?feature=share)
 
 ## Running
 This app is optimized for the Pixel 9 Pro (API 35, VanillaIceCream OS). Performance on other devices may vary.
