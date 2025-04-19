@@ -17,7 +17,7 @@ This app is optimized for the Pixel 9 Pro (API 35, VanillaIceCream OS). Performa
 1. **Clone the Repository**  
    Clone the project to your local machine:  
    ```bash
-   git clone https://git.uwaterloo.ca/oelserwi/cs346-lab101-4.git
+   https://github.com/BickBee/FantasyInvestments.git
 
 2. **Open the Project in Android Studio**  
    - Launch Android Studio 
@@ -33,28 +33,8 @@ This app is optimized for the Pixel 9 Pro (API 35, VanillaIceCream OS). Performa
    - The app should now appear on your device  
    - Tap to open and start using Fantasy Investments!
 
-## Team \#4 Details:
-* Nicholas Lee (n65lee@uwaterloo.ca)  
+## Team Details:
+* Nicholas Lee (n65lee@uwaterloo.ca) (Team Lead)
 * Hans Bhatia (h23bhati@uwaterloo.ca)
 * Omar Elserwi (oelserwi@uwaterloo.ca)  
-* Ryan Kahkeshan (rkahkesh@uwaterloo.ca)  
-
-## Documentation  
-* [Project Proposal](https://git.uwaterloo.ca/oelserwi/cs346-lab101-4/-/wikis/Project-Proposal)
-    * [Revisions](https://git.uwaterloo.ca/oelserwi/cs346-lab101-4/-/wikis/Project-Proposal/Revisions)
-* [Design Proposal](https://git.uwaterloo.ca/oelserwi/cs346-lab101-4/-/wikis/Design-Proposal)  
-    * [Revisions](https://git.uwaterloo.ca/oelserwi/cs346-lab101-4/-/wikis/Design-Proposal/Revisions)
-* [User Guide](https://git.uwaterloo.ca/oelserwi/cs346-lab101-4/-/wikis/User-Guide)  
-* [Design Diagrams](https://git.uwaterloo.ca/oelserwi/cs346-lab101-4/-/wikis/Mermaid-Design-Diagram)
-
-## Project Information  
-* [Team Contract](https://git.uwaterloo.ca/oelserwi/cs346-lab101-4/-/wikis/Team-Contract)  
-* [Meeting Minutes](https://git.uwaterloo.ca/oelserwi/cs346-lab101-4/-/wikis/Meeting-Minutes)
-
-## Releases
-- [Version 0.1.0](https://git.uwaterloo.ca/oelserwi/cs346-lab101-4/-/wikis/Releases/%7BVersion-0.1.0%7D) 
-- [Version 0.1.1](https://git.uwaterloo.ca/oelserwi/cs346-lab101-4/-/wikis/Releases/%7BVersion-0.1.1%7D)
-- [Version 0.2.0](https://git.uwaterloo.ca/oelserwi/cs346-lab101-4/-/wikis/Releases/%7BVersion-0.2.0%7D)
-- [Version 0.3.0](https://git.uwaterloo.ca/oelserwi/cs346-lab101-4/-/wikis/Releases/Version-0.3.0)
-- [Version 0.4.0](https://git.uwaterloo.ca/oelserwi/cs346-lab101-4/-/wikis/Releases/Version-0.4.0)
-- [Version 0.4.1](https://git.uwaterloo.ca/oelserwi/cs346-lab101-4/-/releases/0.4.1)
+* Ryan Kahkeshan (rkahkesh@uwaterloo.ca)
