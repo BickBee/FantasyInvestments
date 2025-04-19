@@ -34,7 +34,7 @@ This app is optimized for the Pixel 9 Pro (API 35, VanillaIceCream OS). Performa
    - Tap to open and start using Fantasy Investments!
 
 ## Team Details:
-* Nicholas Lee (n65lee@uwaterloo.ca) (Team Lead)
-* Hans Bhatia (h23bhati@uwaterloo.ca)
-* Omar Elserwi (oelserwi@uwaterloo.ca)  
-* Ryan Kahkeshan (rkahkesh@uwaterloo.ca)
+* Nicholas Lee (Team Lead)
+* Hans Bhatia
+* Omar Elserwi
+* Ryan Kahkeshan
